@@ -3,259 +3,361 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>بوابة الكاشير والتخليص السريع | KARTFLOW Fast-Pass</title>
+  <title>كاشير التخليص السريع | KartFlow Fast-Pass Gate</title>
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#12171E">
+  <meta name="theme-color" content="#0A1D1B">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="stylesheet" href="/css/style.css">
-  
-  <script src="/socket.io/socket.io.js"></script>
+
   <!-- Firebase Cloud SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="/config.js"></script>
+  <script src="/js/icons.js"></script>
+  <script src="/js/catalog.js"></script>
+  <script src="/js/logic.js"></script>
   <script src="/js/db.js"></script>
+  <script src="/js/shell.js"></script>
+  <script src="/js/scanner.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body>
-  <div class="device-shell">
-    <!-- Navbar -->
-    <header class="nav-header">
-      <div class="brand-meta">
-        <a href="/" style="width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--bg-surface); border: 1px solid var(--border-light); display: flex; align-items: center; justify-content: center; color: var(--text-primary); text-decoration: none;">
-          <i data-icon="arrow-right" class="icon-sm"></i>
-        </a>
-        <div>
-          <h1 class="brand-name" style="font-size: 1.05rem;">نقطة التخليص السريع</h1>
-          <p class="brand-tag">بوابة الفحص الرقمي (Fast-Pass Gate)</p>
-        </div>
-      </div>
-      <div class="live-pill num">نقطة POS-01</div>
-    </header>
-
-    <!-- Main Content -->
-    <main class="content-body">
-      <!-- Master QR Scanner Trigger Card -->
-      <div class="card-white" style="text-align: center; padding: 28px 20px;">
-        <div style="width: 56px; height: 56px; border-radius: var(--radius-md); background: var(--brand-amber-soft); display: flex; align-items: center; justify-content: center; margin: 0 auto 14px auto; color: #92400E;">
-          <i data-icon="qrcode" class="icon-lg"></i>
-        </div>
-        <h2 style="font-size: 1.25rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">
-          فحص رمز العربة (Master QR)
-        </h2>
-        <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 20px;">
-          امسح الكود المعروض على شاشة العربة لإصدار الفاتورة وتجاوز طابور الكاشير فوراً
-        </p>
-
-        <button id="openCashierScannerBtn" class="btn-action btn-amber" style="margin-bottom: 10px;">
-          <i data-icon="scan" class="icon-md"></i>
-          <span>فتح الكاميرا لمسح Master QR</span>
-        </button>
-
-        <button id="quickAuditActiveBtn" class="btn-action btn-soft" style="font-size: 0.88rem;">
-          <i data-icon="shield-check" class="icon-sm"></i>
-          <span>استدعاء فحص العربة #01</span>
-        </button>
-      </div>
-
-      <!-- AUDIT BOARDING-PASS TICKET (Inspired by Flight Ticket Design) -->
-      <div id="auditCard" class="card-white" style="display: none; padding: 0; overflow: hidden; border-color: rgba(16, 185, 129, 0.4);">
-        <!-- Top Ticket Header -->
-        <div style="background: var(--bg-dark-card); padding: 20px 22px; color: #FFF;">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-            <div>
-              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                <span class="badge-tag tag-amber num" id="auditOrderId">ORD-101</span>
-                <span class="badge-tag" style="background: rgba(255,255,255,0.1); color: #FFF;" id="auditCartId">العربة #01</span>
+  <div class="app" id="app">
+    <main class="stage">
+      <!-- Top Band Header -->
+      <header class="band">
+        <div class="container band-in">
+          <div class="topbar">
+            <div class="brand-lockup">
+              <a href="/" class="icon-btn sm" aria-label="الرئيسية"><i data-icon="chevron-right" data-size="18"></i></a>
+              <div>
+                <b>بوابة التخليص السريع (Fast-Pass)</b>
+                <small>فحص رقمي وتجاوز فوري لطوابير الكاشير</small>
               </div>
-              <h3 style="font-size: 1.15rem; font-weight: 700; color: #FFF;" id="auditCustomerName">العميل: كريم محمود</h3>
             </div>
-            <div style="text-align: left;">
-              <div class="num" style="font-size: 1.45rem; font-weight: 800; color: var(--brand-amber);" id="auditTotal">185.00 ج.م</div>
-              <div style="font-size: 0.72rem; color: var(--text-on-dark-muted);">تم التدقيق الرقمي</div>
+            <div class="row-sm">
+              <span class="badge b-glass num">نقطة POS-01</span>
+              <span class="badge b-live"><span class="live-dot"></span><span>متصل</span></span>
+            </div>
+          </div>
+
+          <!-- Quick Metrics Banner -->
+          <div class="card ink" style="padding: 16px 20px; border-radius: var(--r-lg);">
+            <div class="row between">
+              <div>
+                <span class="muted" style="font-size: 12.5px; display: block;">العربات الجاهزة للتخليص:</span>
+                <b class="num" id="readyCartsCount" style="font-size: 20px; color: var(--gold);">0 عربات</b>
+              </div>
+              <button class="btn btn-gold sm" id="topScanMasterBtn">
+                <i data-icon="scan" data-size="18"></i>
+                <span>مسح Master QR</span>
+              </button>
             </div>
           </div>
         </div>
+      </header>
 
-        <!-- Perforated Ticket Dotted Line -->
-        <div style="height: 1px; border-top: 2px dashed var(--border-light); position: relative; margin: 0 16px;"></div>
+      <!-- Main Content Stage Views -->
+      <div class="container page">
+        <!-- VIEW 1: AUDIT & BOARDING-PASS TICKET -->
+        <div class="view" data-view="audit">
+          <div class="stack-lg">
+            <!-- Ready Carts Quick Pull Carousel/List -->
+            <div id="readyCartsSection">
+              <div class="section-title">
+                <h2>عربات بانتظار الاعتماد</h2>
+                <span>اختيار مباشر للفحص</span>
+              </div>
+              <div class="list" id="readyCartsList"></div>
+            </div>
 
-        <!-- Verified Items Body -->
-        <div style="padding: 20px 22px;">
-          <h4 style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 12px;">الأصناف التي تم تدقيقها بالباركود:</h4>
-          <div id="auditItemsList" style="display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto; margin-bottom: 18px;">
-            <!-- Dynamic Items -->
+            <!-- BOARDING-PASS AUDIT TICKET -->
+            <div id="auditTicketWrap"></div>
           </div>
-
-          <button id="approveDispatchBtn" class="btn-action" style="background: var(--status-success); color: #FFFFFF; box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);">
-            <i data-icon="check-circle" class="icon-md"></i>
-            <span>اعتماد الفاتورة وتصريح الخروج للتسليم</span>
-          </button>
         </div>
-      </div>
 
-      <!-- INVOICE SUCCESS CARD -->
-      <div id="invoiceSuccessCard" class="card-white" style="display: none; text-align: center; padding: 32px 24px;">
-        <div style="width: 64px; height: 64px; background: var(--status-success-soft); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto; color: var(--status-success);">
-          <i data-icon="shield-check" class="icon-lg"></i>
+        <!-- VIEW 2: CLEARED ORDERS HISTORY -->
+        <div class="view" data-view="cleared">
+          <div class="stack">
+            <div class="section-title">
+              <h2>سجل الطلبات المجازة والمكتملة</h2>
+              <span id="clearedCountNum" class="num">0 فواتير</span>
+            </div>
+            <div class="list" id="clearedOrdersList"></div>
+          </div>
         </div>
-        <h3 style="font-size: 1.3rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">تم إنهاء وتسليم الطلب بنجاح!</h3>
-        <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 18px;">
-          تم إرسال الفاتورة الإلكترونية للعميل وتفريغ العربة لبدء الأوردر التالي
-        </p>
-        <button id="resetCashierBtn" class="btn-action btn-soft">
-          <i data-icon="refresh" class="icon-sm"></i>
-          <span>استقبال عربة جديدة</span>
-        </button>
       </div>
     </main>
-
-    <!-- FLOATING DOCK -->
-    <nav class="dock-nav">
-      <a href="/" class="dock-item">
-        <i data-icon="home" class="icon-md"></i>
-        <span>الرئيسية</span>
-      </a>
-      <a href="/picker.html" class="dock-item">
-        <i data-icon="scan" class="icon-md"></i>
-        <span>العربة</span>
-      </a>
-      <a href="/customer.html" class="dock-item">
-        <i data-icon="clock" class="icon-md"></i>
-        <span>الطلب</span>
-      </a>
-      <a href="/cashier.html" class="dock-item active">
-        <i data-icon="receipt" class="icon-md"></i>
-        <span>الكاشير</span>
-      </a>
-    </nav>
-
-    <!-- SCANNER MODAL -->
-    <div id="cashierScannerModal" class="sheet-overlay">
-      <div class="sheet-modal">
-        <div class="sheet-bar"></div>
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary);">مسح Master QR للعربة</h3>
-          <button id="closeCashierScanBtn" style="background: none; border: none; color: var(--text-muted); cursor: pointer;">
-            <i data-icon="x" class="icon-md"></i>
-          </button>
-        </div>
-        <div id="cashierScannerViewport" class="scanner-box">
-          <div id="cashierReader" style="width: 100%; height: 100%;"></div>
-        </div>
-      </div>
-    </div>
   </div>
 
-  <script src="/js/icons.js"></script>
-  <script src="/js/audio.js"></script>
-  <script src="/js/scanner.js"></script>
-
   <script>
-    let currentAuditedOrder = null;
+    document.addEventListener('DOMContentLoaded', () => {
+      let orders = [];
+      let selectedOrder = null;
 
-    document.getElementById('quickAuditActiveBtn').addEventListener('click', async () => {
-      const ord = await AppDB.getOrder('ORD-101');
-      if (ord) {
-        displayAudit(ord);
-      } else {
-        alert('لا يوجد أوردر نشط حالياً.');
-      }
-    });
-
-    const cashierModal = document.getElementById('cashierScannerModal');
-    const openScannerBtn = document.getElementById('openCashierScannerBtn');
-    const closeScannerBtn = document.getElementById('closeCashierScanBtn');
-
-    openScannerBtn.addEventListener('click', () => {
-      cashierModal.classList.add('active');
-      BarcodeScanner.startCamera('cashierReader', (decoded) => {
-        cashierModal.classList.remove('active');
-        BarcodeScanner.stopCamera();
-        handleScannedQr(decoded);
-      });
-    });
-
-    closeScannerBtn.addEventListener('click', () => {
-      cashierModal.classList.remove('active');
-      BarcodeScanner.stopCamera();
-    });
-
-    async function handleScannedQr(text) {
-      let orderId = text;
-      try {
-        const parsed = JSON.parse(text);
-        if (parsed.orderId) orderId = parsed.orderId;
-      } catch (e) {}
-
-      const order = await AppDB.getOrder(orderId);
-      if (order) {
-        displayAudit(order);
-        AudioFeedback.success();
-      } else {
-        alert('تعذر العثور على أوردر بهذا الرمز.');
-      }
-    }
-
-    function displayAudit(order) {
-      currentAuditedOrder = order;
-      document.getElementById('auditOrderId').innerText = order.id;
-      document.getElementById('auditCartId').innerText = order.cartId || 'العربة #01';
-      document.getElementById('auditCustomerName').innerText = `العميل: ${order.customerName}`;
-      document.getElementById('auditTotal').innerText = `${order.totalAmount.toFixed(2)} ج.م`;
-
-      const list = document.getElementById('auditItemsList');
-      list.innerHTML = '';
-
-      (order.items || []).forEach(it => {
-        const row = document.createElement('div');
-        row.style.display = 'flex';
-        row.style.justifyContent = 'space-between';
-        row.style.alignItems = 'center';
-        row.style.padding = '8px 12px';
-        row.style.background = 'var(--bg-subtle)';
-        row.style.borderRadius = 'var(--radius-sm)';
-        row.innerHTML = `
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <i data-icon="check-circle" class="icon-sm" style="color: var(--status-success);"></i>
-            <span style="font-size: 0.88rem; color: var(--text-primary); font-weight: 500;">${it.name}</span>
-          </div>
-          <div class="num" style="font-size: 0.85rem; color: var(--brand-amber); font-weight: 700;">
-            ${it.requiredQty} ${it.unit || 'قطعة'}
-          </div>
-        `;
-        list.appendChild(row);
-      });
-
-      document.getElementById('auditCard').style.display = 'block';
-      document.getElementById('invoiceSuccessCard').style.display = 'none';
-      renderAllIcons(document);
-    }
-
-    document.getElementById('approveDispatchBtn').addEventListener('click', async () => {
-      if (!currentAuditedOrder) return;
-
-      const res = await AppDB.dispatchOrder(currentAuditedOrder.id, 'POS-01');
-      if (res && res.success) {
-        AudioFeedback.complete();
-        document.getElementById('auditCard').style.display = 'none';
-        document.getElementById('invoiceSuccessCard').style.display = 'block';
-      }
-    });
-
-    if (window.io) {
-      window.socket = io();
-      window.socket.on('clearance_result', (res) => {
-        if (res.success) {
-          AudioFeedback.complete();
-          document.getElementById('auditCard').style.display = 'none';
-          document.getElementById('invoiceSuccessCard').style.display = 'block';
+      // Mount Shell Navigation
+      Shell.mount({
+        role: 'cashier',
+        initial: 'audit',
+        tabs: [
+          { id: 'audit', label: 'فحص وتدقيق', icon: 'scan' },
+          { id: 'cleared', label: 'الفواتير المجازة', icon: 'receipt' }
+        ],
+        center: { id: 'scan-master', label: 'مسح Master QR', icon: 'qr', act: true },
+        onAction: act => {
+          if (act === 'scan-master') openMasterScanner();
         }
       });
-    }
 
-    document.getElementById('resetCashierBtn').addEventListener('click', () => {
-      currentAuditedOrder = null;
-      document.getElementById('invoiceSuccessCard').style.display = 'none';
+      // Background seed if empty
+      AppDB.seedIfEmpty().catch(() => {});
+
+      // Hardware Barcode Scanner Listener
+      Scanner.hardware(code => handleScannedCode(code));
+
+      // Listen to Orders
+      AppDB.onOrders(all => {
+        orders = all;
+        syncCashierUI();
+      });
+
+      document.getElementById('topScanMasterBtn').addEventListener('click', () => openMasterScanner());
+
+      function syncCashierUI() {
+        const readyOrders = orders.filter(o => o.status === 'ready');
+        const clearedOrders = orders.filter(o => o.status === 'completed');
+
+        document.getElementById('readyCartsCount').textContent = `${readyOrders.length} طلبات جاهزة`;
+        document.getElementById('clearedCountNum').textContent = `${clearedOrders.length} فواتير`;
+
+        // Default selection if not already selected
+        if (!selectedOrder && readyOrders.length) {
+          selectedOrder = readyOrders[0];
+        } else if (selectedOrder) {
+          selectedOrder = orders.find(o => o.id === selectedOrder.id) || null;
+        }
+
+        renderReadyCartsList(readyOrders);
+        renderAuditTicket(selectedOrder);
+        renderClearedOrders(clearedOrders);
+        Icons.mount();
+      }
+
+      // Render Ready Carts List
+      function renderReadyCartsList(readyList) {
+        const list = document.getElementById('readyCartsList');
+        if (!readyList.length) {
+          list.innerHTML = `<div class="card soft center" style="padding: 24px;"><p class="muted">لا توجد عربات بانتظار الاعتماد حالياً. ستظهر هنا فور اكتمال التجميع.</p></div>`;
+          return;
+        }
+
+        list.innerHTML = readyList.map(o => `
+          <div class="irow between" style="cursor: pointer; border-color: ${selectedOrder && selectedOrder.id === o.id ? 'var(--gold)' : 'var(--stroke)'};" onclick="selectAuditOrder('${o.id}')">
+            <div class="row">
+              <span class="bin lg ${o.bin || 'A'}">${o.bin || 'A'}</span>
+              <div>
+                <b>${o.customer.name} • <span class="num">${o.id}</span></b>
+                <small class="muted row-sm" style="display: flex;">
+                  <span>عربة ${o.cartId || 'CART-01'}</span>
+                  <span>•</span>
+                  <span>${o.items.length} أصناف</span>
+                  <span>•</span>
+                  <span class="num">${Shell.money(o.total)}</span>
+                </small>
+              </div>
+            </div>
+            <button class="btn btn-gold sm">عرض الفحص</button>
+          </div>
+        `).join('');
+      }
+
+      window.selectAuditOrder = id => {
+        selectedOrder = orders.find(o => o.id === id);
+        renderAuditTicket(selectedOrder);
+        Icons.mount();
+      };
+
+      // Render Boarding-Pass Audit Ticket
+      function renderAuditTicket(o) {
+        const wrap = document.getElementById('auditTicketWrap');
+        if (!o) {
+          wrap.innerHTML = '';
+          return;
+        }
+
+        wrap.innerHTML = `
+          <div class="ticket rise">
+            <!-- Ticket Top Segment -->
+            <div class="ticket-top">
+              <div class="row between" style="margin-bottom: 14px;">
+                <div class="row-sm">
+                  <span class="badge b-gold num" style="font-size: 13px;">تذكرة فحص سريع Fast-Pass</span>
+                  <span class="bin ${o.bin || 'A'}">${o.bin || 'A'}</span>
+                </div>
+                <span class="badge b-ok num">100% مدقق بالباركود</span>
+              </div>
+
+              <div class="row between">
+                <div>
+                  <h3 class="t-h2" style="color: #F4F1E8; margin-bottom: 4px;">العميل: ${o.customer.name}</h3>
+                  <div class="row-sm muted" style="font-size: 13px;">
+                    <span>رقم الطلب: <b class="num" style="color: #F4F1E8;">${o.id}</b></span>
+                    <span>•</span>
+                    <span>العربة: <b class="num" style="color: #F4F1E8;">${o.cartId || 'CART-01'}</b></span>
+                  </div>
+                </div>
+                <div style="text-align: end;">
+                  <span class="muted" style="font-size: 12px; display: block;">إجمالي الفاتورة:</span>
+                  <div class="num" style="font-size: 24px; font-weight: 800; color: var(--gold);">${Shell.money(o.total)}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Perforated Tear Line -->
+            <div class="ticket-tear"></div>
+
+            <!-- Ticket Body Segment -->
+            <div class="ticket-body">
+              <div class="section-title" style="margin-bottom: 12px;">
+                <h4 style="font-size: 14.5px; font-weight: 700;">بيان الأصناف المجمعة والمفحوصة:</h4>
+                <span class="num muted">${o.items.length} أصناف</span>
+              </div>
+
+              <div class="list" style="max-height: 280px; overflow-y: auto; margin-bottom: 20px;">
+                ${o.items.map(it => `
+                  <div class="line">
+                    <div class="row-sm" style="min-width: 0;">
+                      <i data-icon="check-circle" data-size="16" style="color: var(--ok); flex: none;"></i>
+                      <div style="min-width: 0;">
+                        <span style="font-weight: 600; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${it.name}</span>
+                        <small class="muted num" style="font-size: 11.5px;">باركود: ${it.barcode || it.plu || '—'}</small>
+                      </div>
+                    </div>
+                    <div class="row-sm" style="flex: none;">
+                      <span class="num x">${Shell.qtyText(it)}</span>
+                      <span class="num" style="font-weight: 600;">${Shell.money(Logic.itemTotal(it))}</span>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+
+              <button class="btn btn-ok block lg" id="authorizeClearanceBtn" style="box-shadow: 0 12px 28px -10px rgba(46,158,110,.7);">
+                <i data-icon="shield" data-size="22"></i>
+                <span>اعتماد الفاتورة وتصريح الخروج الفوري</span>
+              </button>
+            </div>
+          </div>`;
+
+        document.getElementById('authorizeClearanceBtn').addEventListener('click', () => authorizeOrder(o));
+      }
+
+      // Authorize Order & Print Clearance Pass
+      async function authorizeOrder(o) {
+        await AppDB.update(o.id, ord => Logic.complete(ord));
+
+        // Celebratory Burst Feedback
+        Shell.burst(`
+          <div class="check-draw">
+            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <h2 class="t-h2" style="margin-bottom: 6px;">تم التخليص والاعتماد!</h2>
+          <p class="muted" style="margin-bottom: 14px; font-size: 14px;">
+            تم تصريح خروج العميل <b>${o.customer.name}</b> بدون الوقوف في الطابور.
+          </p>
+          <div class="badge b-ok num" style="font-size: 14px; padding: 6px 16px;">
+            كود التصريح: FP-${Math.floor(100000 + Math.random() * 900000)}
+          </div>
+        `, 2400);
+
+        selectedOrder = null;
+        Shell.go('cleared');
+      }
+
+      // Render Cleared Orders List
+      function renderClearedOrders(clearedList) {
+        const list = document.getElementById('clearedOrdersList');
+        if (!clearedList.length) {
+          list.innerHTML = `<div class="card soft center" style="padding: 24px;"><p class="muted">لا توجد فواتير مجازة بعد في هذا اليوم.</p></div>`;
+          return;
+        }
+
+        list.innerHTML = clearedList.map(o => `
+          <div class="card" style="display: flex; align-items: center; justify-content: space-between;">
+            <div class="row">
+              <div class="tile tile-sm t-mint"><i data-icon="receipt" data-size="20"></i></div>
+              <div>
+                <b>${o.customer.name} • <span class="num">${o.id}</span></b>
+                <small class="muted row-sm" style="display: flex; margin-top: 2px;">
+                  <span>تم التسليم ${Shell.clock(o.completedAt || o.createdAt)}</span>
+                  <span>•</span>
+                  <span>نقطة POS-01</span>
+                </small>
+              </div>
+            </div>
+            <div style="text-align: end;">
+              <span class="num" style="font-weight: 700; color: var(--ok);">${Shell.money(o.total)}</span>
+              <span class="badge b-ok sm" style="display: block; margin-top: 4px;">مكتمل</span>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Master QR Scanner
+      function openMasterScanner() {
+        Shell.openSheet({
+          title: 'فحص رمز Master QR للعربة',
+          html: Scanner.markup({ placeholder: 'امسح رمز العربة أو اكتب رقم الطلب...', demo: true }),
+          onMount: body => {
+            Scanner.start('reader', code => {
+              handleScannedCode(code);
+            });
+
+            body.querySelector('#manualGo').addEventListener('click', () => {
+              const code = body.querySelector('#manualCode').value.trim();
+              if (code) handleScannedCode(code);
+            });
+
+            const demoBtn = body.querySelector('#demoScan');
+            if (demoBtn) {
+              demoBtn.innerHTML = `${I('zap', 18)}<span>استدعاء فحص أول عربة جاهزة</span>`;
+              demoBtn.addEventListener('click', () => {
+                const ready = orders.find(o => o.status === 'ready');
+                if (ready) handleScannedCode(ready.id);
+                else Shell.toast('لا توجد عربة مكتملة جاهزة للتخليص حالياً', { tone: 'warn' });
+              });
+            }
+          },
+          onClose: () => {
+            Scanner.stop();
+          }
+        });
+        Icons.mount();
+      }
+
+      function handleScannedCode(code) {
+        if (!code) return;
+        Shell.closeSheet();
+
+        let targetId = code;
+        try {
+          const parsed = JSON.parse(code);
+          if (parsed.orders && parsed.orders.length) targetId = parsed.orders[0];
+          else if (parsed.cart) {
+            const found = orders.find(o => o.cartId === parsed.cart && o.status === 'ready');
+            if (found) targetId = found.id;
+          }
+        } catch (e) {}
+
+        const matched = orders.find(o => o.id === targetId || o.cartId === targetId);
+        if (matched) {
+          selectedOrder = matched;
+          Shell.go('audit');
+          Shell.toast(`تم استدعاء تذكرة الفحص للطلب ${matched.id}`, { tone: 'ok' });
+        } else {
+          Shell.toast('رمز العربة غير مطابق لأي طلب مسجل', { tone: 'bad' });
+        }
+      }
     });
   </script>
 </body>

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>لوحة عمليات المتجر | KartFlow Operations</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0A1D1B">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="stylesheet" href="/css/style.css">
+
+  <!-- Firebase Cloud SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="/config.js"></script>
+  <script src="/js/icons.js"></script>
+  <script src="/js/catalog.js"></script>
+  <script src="/js/logic.js"></script>
+  <script src="/js/db.js"></script>
+  <script src="/js/shell.js"></script>
+</head>
+<body>
+  <div class="app" id="app">
+    <main class="stage">
+      <!-- Top Band Header -->
+      <header class="band">
+        <div class="container band-in">
+          <div class="topbar">
+            <div class="brand-lockup">
+              <a href="/" class="icon-btn sm" aria-label="الرئيسية"><i data-icon="chevron-right" data-size="18"></i></a>
+              <div>
+                <b>لوحة عمليات المتجر (Operations)</b>
+                <small>مراقبة حية للعربات والأرفف ومعدل التدفق</small>
+              </div>
+            </div>
+            <div class="row-sm">
+              <span class="badge b-glass"><i data-icon="store" data-size="14"></i><span>فرع المعادي</span></span>
+              <span class="badge b-live"><span class="live-dot"></span><span>مباشر</span></span>
+            </div>
+          </div>
+
+          <!-- Executive KPI Grid -->
+          <div class="kpis">
+            <div class="kpi t-sand">
+              <div class="row between"><span class="l">عربات نشطة</span><div class="ico"><i data-icon="cart" data-size="16"></i></div></div>
+              <div class="v num" id="kpiActiveCarts">02</div>
+            </div>
+            <div class="kpi t-mint">
+              <div class="row between"><span class="l">متوسط التجهيز</span><div class="ico"><i data-icon="timer" data-size="16"></i></div></div>
+              <div class="v num">4.2m</div>
+            </div>
+            <div class="kpi t-sky">
+              <div class="row between"><span class="l">دقة التجميع</span><div class="ico"><i data-icon="shield" data-size="16"></i></div></div>
+              <div class="v num">99.8%</div>
+            </div>
+            <div class="kpi t-peach">
+              <div class="row between"><span class="l">إجمالي المبيعات</span><div class="ico"><i data-icon="receipt" data-size="16"></i></div></div>
+              <div class="v num" id="kpiTotalRevenue" style="font-size: 22px;">0 ج.م</div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Content Stage Views -->
+      <div class="container page">
+        <!-- VIEW 1: OVERVIEW & ACTIVE ORDERS -->
+        <div class="view" data-view="overview">
+          <div class="stack-lg">
+            <div class="section-title">
+              <h2>الطلبات قيد التجهيز والتسليم</h2>
+              <span id="overviewOrdersCount" class="num">0 طلبات</span>
+            </div>
+            <div class="stack" id="overviewOrdersList"></div>
+          </div>
+        </div>
+
+        <!-- VIEW 2: LIVE AUDIT EVENT STREAM -->
+        <div class="view" data-view="live">
+          <div class="stack">
+            <div class="section-title">
+              <h2>التغذية اللحظية لحركات المتجر (Live Event Stream)</h2>
+              <span class="badge b-live"><span class="live-dot"></span><span>تدفق حي</span></span>
+            </div>
+            <div class="card" style="padding: 24px;">
+              <ul class="feed" id="liveActivityFeed"></ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 3: CATALOG & AISLE MAPPING -->
+        <div class="view" data-view="catalog">
+          <div class="stack-lg">
+            <div class="section-title">
+              <h2>توزيع ممرات السوبر ماركت (Store Aisles A1-D2)</h2>
+              <span class="num">8 أقسام مجهزة</span>
+            </div>
+            <div class="list" id="aislesMapList"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      let orders = [];
+
+      Shell.mount({
+        role: 'manager',
+        initial: 'overview',
+        tabs: [
+          { id: 'overview', label: 'العمليات والطلبات', icon: 'layout' },
+          { id: 'live', label: 'التغذية الحية', icon: 'activity' },
+          { id: 'catalog', label: 'ممرات المتجر', icon: 'store' }
+        ],
+        center: { id: 'reset', label: 'إعادة تهيئة', icon: 'refresh', act: true },
+        onAction: act => {
+          if (act === 'reset') {
+            if (confirm('هل ترغب في إعادة تهيئة الطلبات التجريبية الافتراضية للمتجر؟')) {
+              AppDB.reset().then(() => Shell.toast('تمت إعادة ضبط البيانات التجريبية', { tone: 'ok' }));
+            }
+          }
+        }
+      });
+
+      AppDB.seedIfEmpty().catch(() => {});
+
+      AppDB.onOrders(all => {
+        orders = all;
+        syncManagerUI();
+      });
+
+      function syncManagerUI() {
+        // KPI calculations
+        const activeCarts = new Set(orders.filter(o => o.cartId && !['completed', 'cancelled'].includes(o.status)).map(o => o.cartId)).size;
+        const totalSales = orders.reduce((s, o) => s + (o.status !== 'cancelled' ? o.total : 0), 0);
+
+        document.getElementById('kpiActiveCarts').textContent = String(Math.max(1, activeCarts)).padStart(2, '0');
+        document.getElementById('kpiTotalRevenue').innerHTML = Shell.money(totalSales);
+        document.getElementById('overviewOrdersCount').textContent = `${orders.length} طلبات`;
+
+        renderOrdersTable();
+        renderLiveFeed();
+        renderAislesMap();
+        Icons.mount();
+      }
+
+      function renderOrdersTable() {
+        const wrap = document.getElementById('overviewOrdersList');
+        if (!orders.length) {
+          wrap.innerHTML = `<div class="card soft center" style="padding: 24px;"><p class="muted">لا توجد طلبات مسجلة.</p></div>`;
+          return;
+        }
+
+        wrap.innerHTML = orders.map(o => {
+          const prog = Logic.progress(o);
+          return `
+            <div class="card">
+              <div class="row between" style="margin-bottom: 12px;">
+                <div class="row">
+                  <span class="bin lg ${o.bin || 'A'}">${o.bin || '—'}</span>
+                  <div>
+                    <b>${o.customer.name}</b>
+                    <small class="muted row-sm" style="display: flex;">
+                      <span class="num">${o.id}</span>
+                      <span>•</span>
+                      <span>عربة ${o.cartId || 'غير مخصص'}</span>
+                    </small>
+                  </div>
+                </div>
+                <div style="text-align: end;">
+                  <span class="num" style="font-weight: 700; font-size: 16px;">${Shell.money(o.total)}</span>
+                  <span class="badge ${o.status === 'completed' ? 'b-ok' : o.status === 'ready' ? 'b-forest' : 'b-gold'}" style="display: block; margin-top: 4px;">
+                    ${o.status === 'completed' ? 'تم التسليم' : o.status === 'ready' ? 'جاهز للتسليم' : 'قيد التجميع'}
+                  </span>
+                </div>
+              </div>
+
+              <div class="row between" style="font-size: 13px; margin-bottom: 6px;">
+                <span class="muted">نسبة الإنجاز:</span>
+                <span class="num" style="font-weight: 700;">${prog.done} من ${prog.total} صنف (${prog.pct}%)</span>
+              </div>
+              <div class="bar"><i style="--p: ${prog.pct};"></i></div>
+            </div>`;
+        }).join('');
+      }
+
+      function renderLiveFeed() {
+        const feed = document.getElementById('liveActivityFeed');
+        const events = [];
+        orders.forEach(o => {
+          (o.log || []).forEach(l => events.push({ ...l, orderId: o.id, customer: o.customer.name }));
+        });
+        events.sort((a, b) => b.t - a.t);
+
+        if (!events.length) {
+          feed.innerHTML = `<li><div class="d"></div><div>لا توجد حركات مسجلة بعد.</div></li>`;
+          return;
+        }
+
+        feed.innerHTML = events.slice(0, 25).map(e => `
+          <li>
+            <div class="d"></div>
+            <div>
+              <span style="font-weight: 600;">${e.x}</span>
+              <span class="muted"> — ${e.customer} (<b class="num">${e.orderId}</b>)</span>
+              <time class="num">${Shell.ago(e.t)} • ${Shell.clock(e.t)}</time>
+            </div>
+          </li>
+        `).join('');
+      }
+
+      function renderAislesMap() {
+        const wrap = document.getElementById('aislesMapList');
+        wrap.innerHTML = Catalog.DEPTS.map(d => {
+          const prods = Catalog.products.filter(p => p.dept === d.id);
+          return `
+            <div class="card" style="display: flex; align-items: center; justify-content: space-between;">
+              <div class="row">
+                <div class="tile tile-md t-${d.tint || 'sand'}">${Art.dept(d.id)}</div>
+                <div>
+                  <b>${d.name}</b>
+                  <small class="muted row-sm" style="display: flex; margin-top: 2px;">
+                    <span class="num">ممر ${d.aisle}</span>
+                    <span>•</span>
+                    <span class="num">${prods.length} أصناف مسجلة</span>
+                  </small>
+                </div>
+              </div>
+              <span class="badge b-mute num">تسلسل المسار #${d.order}</span>
+            </div>`;
+        }).join('');
+      }
+    });
+  </script>
+</body>
+</html>

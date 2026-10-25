@@ -3,456 +3,589 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>متابعة وتجهيز الطلب | KARTFLOW</title>
+  <title>تطبيق العميل | KartFlow Customer Live</title>
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#12171E">
+  <meta name="theme-color" content="#1E4A44">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="stylesheet" href="/css/style.css">
-  
-  <script src="/socket.io/socket.io.js"></script>
+
   <!-- Firebase Cloud SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="/config.js"></script>
+  <script src="/js/icons.js"></script>
+  <script src="/js/catalog.js"></script>
+  <script src="/js/logic.js"></script>
   <script src="/js/db.js"></script>
+  <script src="/js/shell.js"></script>
 </head>
 <body>
-  <div class="device-shell">
-    <!-- Navbar -->
-    <header class="nav-header">
-      <div class="brand-meta">
-        <a href="/" style="width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--bg-surface); border: 1px solid var(--border-light); display: flex; align-items: center; justify-content: center; color: var(--text-primary); text-decoration: none;">
-          <i data-icon="arrow-right" class="icon-sm"></i>
-        </a>
-        <div>
-          <h1 class="brand-name" style="font-size: 1.05rem;">متابعة الطلب</h1>
-          <p class="brand-tag">تجهيز مباشر من الأرفف</p>
-        </div>
-      </div>
-      <div class="live-pill num" id="customerStatusTag">تتبع لحظي</div>
-    </header>
-
-    <!-- Segmented Tab Switcher (Inspired by Modern iOS / Dribbble UIs) -->
-    <div style="padding: 10px 20px 0 20px;">
-      <div style="background: var(--bg-subtle); padding: 4px; border-radius: var(--radius-pill); display: flex; border: 1px solid var(--border-light);">
-        <button id="tabTrackBtn" style="flex: 1; padding: 10px; border-radius: var(--radius-pill); border: none; font-family: var(--font-main); font-size: 0.85rem; font-weight: 600; cursor: pointer; background: #FFFFFF; color: var(--text-primary); box-shadow: var(--shadow-sm); transition: all 0.2s ease;">
-          <i data-icon="clock" class="icon-sm" style="color: var(--brand-amber);"></i>
-          <span>تتبع الأوردر الحية</span>
-        </button>
-        <button id="tabShopBtn" style="flex: 1; padding: 10px; border-radius: var(--radius-pill); border: none; font-family: var(--font-main); font-size: 0.85rem; font-weight: 500; cursor: pointer; background: transparent; color: var(--text-muted); transition: all 0.2s ease;">
-          <i data-icon="cart" class="icon-sm"></i>
-          <span>طلب جديد</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- MAIN VIEW 1: LIVE ORDER TRACKING -->
-    <main id="trackingView" class="content-body">
-      <!-- Order Live Header Card -->
-      <div class="card-white" style="padding: 22px;">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
-          <div>
-            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
-              <span class="badge-tag tag-amber num" id="liveOrderId">ORD-101</span>
-              <span class="badge-tag tag-neutral" id="assignedCartBadge">العربة #01</span>
-            </div>
-            <h2 style="font-size: 1.2rem; font-weight: 700; color: var(--text-primary);" id="orderStageTitle">
-              جاري تجميع طلبك الآن من الأرفف
-            </h2>
-          </div>
-          <div style="text-align: left;">
-            <div class="num" id="orderTotalText" style="font-size: 1.35rem; font-weight: 800; color: var(--brand-amber);">185.00 ج.م</div>
-            <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 500;">الإجمالي التقديري</div>
-          </div>
-        </div>
-
-        <!-- 3-Step Journey Stepper (Inspired by Image 3) -->
-        <div class="aisle-stepper" style="margin: 18px 0 10px 0;">
-          <div class="aisle-step">
-            <div class="step-circle completed"><i data-icon="check-circle" class="icon-sm"></i></div>
-            <span class="step-label">تم الاستلام</span>
-          </div>
-          <div class="aisle-step">
-            <div class="step-circle active" id="step2Circle"><i data-icon="clock" class="icon-sm"></i></div>
-            <span class="step-label" id="step2Label" style="color: var(--brand-amber); font-weight: 700;">التجميع بالعربة</span>
-          </div>
-          <div class="aisle-step">
-            <div class="step-circle" id="step3Circle">3</div>
-            <span class="step-label" id="step3Label">الكاشير والتسليم</span>
-          </div>
-          <div class="stepper-track"></div>
-        </div>
-
-        <!-- Progress Bar & Percentage -->
-        <div style="margin-top: 14px;">
-          <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-muted); margin-bottom: 6px;">
-            <span>أصناف تم وضعها بالعربة</span>
-            <span class="num" id="liveProgressPercent" style="color: var(--brand-amber); font-weight: 700;">0%</span>
-          </div>
-          <div class="progress-bar-wrap">
-            <div class="progress-bar-fill" id="liveProgressBar" style="width: 0%;"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- LIVE SUBSTITUTION ALERT BANNER (If picker flags an out of stock) -->
-      <div id="subAlertBanner" class="card-amber" style="display: none; padding: 20px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <i data-icon="refresh" class="icon-md" style="color: #92400E;"></i>
-            <span style="font-weight: 700; font-size: 0.95rem; color: #78350F;">اقتراح بديل ذكي لصنف غير متوفر</span>
-          </div>
-          <span class="badge-tag num" style="background: #FFFFFF; color: #92400E; font-weight: 700;" id="subTimer">03:00</span>
-        </div>
-
-        <p style="font-size: 0.82rem; color: #92400E; margin-bottom: 14px; line-height: 1.5;">
-          صنف <strong id="subOriginalName" style="color: #78350F;">...</strong> غير متوفر في الرف. اقترح المُحضّر هذا البديل:
-        </p>
-
-        <!-- Substitute Details Card -->
-        <div style="background: #FFFFFF; border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 14px; box-shadow: var(--shadow-sm); display: flex; justify-content: space-between; align-items: center;">
-          <div>
-            <div style="font-weight: 700; color: var(--text-primary); font-size: 0.95rem;" id="subNewName">...</div>
-            <div style="font-size: 0.75rem; color: var(--text-muted);">نفس الفئة والجودة العالية</div>
-          </div>
-          <div class="num" style="font-weight: 800; color: var(--brand-amber); font-size: 1.1rem;" id="subNewPrice">... ج.م</div>
-        </div>
-
-        <!-- Action Buttons -->
-        <div style="display: flex; gap: 10px;">
-          <button id="acceptSubBtn" class="btn-action btn-dark" style="flex: 2; padding: 12px; font-size: 0.9rem;">
-            <i data-icon="check-circle" class="icon-sm"></i>
-            <span>قبول واختيار البديل</span>
-          </button>
-          <button id="rejectSubBtn" class="btn-action btn-soft-danger" style="flex: 1; padding: 12px; font-size: 0.85rem;">
-            <i data-icon="x" class="icon-sm"></i>
-            <span>إلغاء</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Live Items Breakdown -->
-      <div>
-        <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 12px;">قائمة أصناف طلبك</h3>
-        <div id="customerItemsList" style="display: flex; flex-direction: column; gap: 10px;">
-          <!-- Dynamically populated -->
-        </div>
-      </div>
-    </main>
-
-    <!-- MAIN VIEW 2: SHOP CATALOG (To create new orders) -->
-    <main id="shopView" class="content-body" style="display: none;">
-      <div class="card-white" style="padding: 16px 20px;">
-        <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary); margin-bottom: 2px;">تسوق منتجات جديدة</h3>
-        <p style="font-size: 0.8rem; color: var(--text-muted);">اختر المنتجات ليتم إرسالها فوراً لشاشة أقرب عربة ذكية</p>
-      </div>
-
-      <div id="catalogList" style="display: flex; flex-direction: column; gap: 10px;">
-        <!-- Populated dynamically -->
-      </div>
-    </main>
-
-    <!-- Bottom Checkout Floating Pill (Active in Shop View) -->
-    <div id="shopBottomBar" class="dock-nav" style="display: none; justify-content: space-between; padding: 10px 18px; max-width: 420px;">
-      <div>
-        <div style="font-size: 0.72rem; color: var(--text-on-dark-muted);">السلة: <span id="cartCount" class="num" style="color: #FFF; font-weight: 700;">0</span> أصناف</div>
-        <div class="num" id="cartTotal" style="font-size: 1.2rem; font-weight: 800; color: var(--brand-amber);">0.00 ج.م</div>
-      </div>
-      <button id="submitOrderBtn" class="btn-action btn-amber" style="width: auto; padding: 10px 20px; font-size: 0.9rem;">
-        <i data-icon="cart" class="icon-sm"></i>
-        <span>إرسال للعربة</span>
-      </button>
-    </div>
-
-    <!-- Regular Dock Nav (Active in Track View) -->
-    <nav id="regularDock" class="dock-nav">
-      <a href="/" class="dock-item">
-        <i data-icon="home" class="icon-md"></i>
-        <span>الرئيسية</span>
-      </a>
-      <a href="/picker.html" class="dock-item">
-        <i data-icon="scan" class="icon-md"></i>
-        <span>العربة</span>
-      </a>
-      <a href="/customer.html" class="dock-item active">
-        <i data-icon="clock" class="icon-md"></i>
-        <span>الطلب</span>
-      </a>
-      <a href="/cashier.html" class="dock-item">
-        <i data-icon="receipt" class="icon-md"></i>
-        <span>الكاشير</span>
-      </a>
-    </nav>
-  </div>
-
-  <script src="/js/icons.js"></script>
-  <script src="/js/audio.js"></script>
-  <script>
-    let currentOrderId = 'ORD-101';
-    let currentOrder = null;
-    let localCart = [];
-    let subCountdownInterval = null;
-
-    async function initCustomerOrder() {
-      const order = await AppDB.getOrder(currentOrderId);
-      if (order) {
-        currentOrder = order;
-        renderLiveTracking();
-      }
-
-      AppDB.subscribeOrder(currentOrderId, (updated) => {
-        if (updated) {
-          currentOrder = updated;
-          renderLiveTracking();
-          AudioFeedback.success();
-        }
-      });
-    }
-    initCustomerOrder();
-
-    if (window.io) {
-      window.socket = io();
-      window.socket.emit('customer_join', currentOrderId);
-
-      window.socket.on('order_updated', (order) => {
-        if (!AppDB.isCloudActive() && currentOrder && currentOrder.id === order.id) {
-          currentOrder = order;
-          renderLiveTracking();
-          AudioFeedback.success();
-        }
-      });
-
-      window.socket.on('order_completed', (order) => {
-        currentOrder = order;
-        renderLiveTracking();
-        AudioFeedback.complete();
-        alert('تم اكتمال تجهيز طلبك واعتماده عند الكاشير بنجاح!');
-      });
-
-      window.socket.on('substitution_alert', ({ orderId, subRequest, order }) => {
-        if (currentOrderId !== orderId) return;
-        currentOrder = order;
-        renderLiveTracking();
-        AudioFeedback.alert();
-        showSubstitutionBanner(subRequest);
-      });
-    }
-
-    function renderLiveTracking() {
-      if (!currentOrder) return;
-
-      document.getElementById('liveOrderId').innerText = currentOrder.id;
-      document.getElementById('assignedCartBadge').innerText = currentOrder.cartId || 'العربة #01';
-      document.getElementById('orderTotalText').innerText = `${currentOrder.totalAmount.toFixed(2)} ج.م`;
-
-      const items = currentOrder.items || [];
-      const pickedCount = items.filter(i => i.status === 'picked' || i.status === 'substituted').length;
-      const totalCount = items.length;
-      const pct = totalCount > 0 ? Math.round((pickedCount / totalCount) * 100) : 0;
-
-      document.getElementById('liveProgressPercent').innerText = `${pickedCount}/${totalCount} (${pct}%)`;
-      document.getElementById('liveProgressBar').style.width = `${pct}%`;
-
-      const step2Circle = document.getElementById('step2Circle');
-      const step3Circle = document.getElementById('step3Circle');
-
-      if (currentOrder.status === 'completed') {
-        document.getElementById('orderStageTitle').innerText = 'تم التجهيز واعتماد الفاتورة عند الكاشير';
-        step2Circle.className = 'step-circle completed';
-        step2Circle.innerHTML = '<i data-icon="check-circle" class="icon-sm"></i>';
-        step3Circle.className = 'step-circle completed';
-        step3Circle.innerHTML = '<i data-icon="check-circle" class="icon-sm"></i>';
-      } else if (currentOrder.status === 'ready_for_dispatch') {
-        document.getElementById('orderStageTitle').innerText = 'العربة متجهة لنقطة الكاشير للتسليم السريع';
-        step2Circle.className = 'step-circle completed';
-        step2Circle.innerHTML = '<i data-icon="check-circle" class="icon-sm"></i>';
-        step3Circle.className = 'step-circle active';
-      } else {
-        document.getElementById('orderStageTitle').innerText = 'المُحضّر يقوم بتجميع طلبك الآن في الممرات';
-      }
-
-      const activeSub = (currentOrder.substitutionRequests || []).find(s => s.status === 'pending');
-      if (activeSub) {
-        showSubstitutionBanner(activeSub);
-      } else {
-        document.getElementById('subAlertBanner').style.display = 'none';
-        if (subCountdownInterval) clearInterval(subCountdownInterval);
-      }
-
-      const container = document.getElementById('customerItemsList');
-      container.innerHTML = '';
-
-      items.forEach(item => {
-        let statusBadge = `<span class="badge-tag tag-neutral">في الانتظار</span>`;
-
-        if (item.status === 'picked') {
-          statusBadge = `<span class="badge-tag tag-success"><i data-icon="check-circle" class="icon-sm"></i> تم الوضع بالعربة</span>`;
-        } else if (item.status === 'out_of_stock') {
-          statusBadge = `<span class="badge-tag tag-amber"><i data-icon="refresh" class="icon-sm"></i> بديل مقترح</span>`;
-        } else if (item.status === 'cancelled') {
-          statusBadge = `<span class="badge-tag" style="background: var(--status-danger-soft); color: var(--status-danger);"><i data-icon="x" class="icon-sm"></i> ملغي</span>`;
-        }
-
-        const card = document.createElement('div');
-        card.className = 'card-white';
-        card.style.padding = '14px 18px';
-        card.innerHTML = `
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-              <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary);">${item.name}</div>
-              <div style="font-size: 0.78rem; color: var(--text-muted);">${item.category || 'عام'} • ${item.requiredQty} ${item.unit || 'قطعة'}</div>
-            </div>
-            <div style="text-align: left;">
-              ${statusBadge}
-              <div class="num" style="font-size: 0.85rem; color: var(--brand-amber); font-weight: 700; margin-top: 4px;">
-                ${(item.price * item.requiredQty).toFixed(2)} ج.م
+  <div class="app" id="app">
+    <main class="stage">
+      <!-- Top Band Header -->
+      <header class="band">
+        <div class="container band-in">
+          <div class="topbar">
+            <div class="brand-lockup">
+              <a href="/" class="icon-btn sm" aria-label="الرئيسية"><i data-icon="chevron-right" data-size="18"></i></a>
+              <div>
+                <b id="customerHeaderName">متابعة الطلب</b>
+                <small>تجهيز مباشر من الأرفف</small>
               </div>
             </div>
+            <div class="row-sm">
+              <span class="badge b-glass num" id="customerOrderIdTag">KF-1041</span>
+              <button class="icon-btn sm" id="switchOrderBtn" title="تبديل الطلب"><i data-icon="swap" data-size="16"></i></button>
+            </div>
           </div>
-        `;
-        container.appendChild(card);
+
+          <!-- 4-Step Journey Stepper -->
+          <div class="journey" id="customerJourney" style="margin-top: 10px;">
+            <div class="jstep done">
+              <div class="c"><i data-icon="check" data-size="14"></i></div>
+              <span>تم الاستلام</span>
+            </div>
+            <div class="jstep now" id="stepPicking">
+              <div class="c"><i data-icon="cart" data-size="14"></i></div>
+              <span>بالعربة الذكية</span>
+            </div>
+            <div class="jstep" id="stepReady">
+              <div class="c"><i data-icon="receipt" data-size="14"></i></div>
+              <span>جاهز للكاشير</span>
+            </div>
+            <div class="jstep" id="stepCompleted">
+              <div class="c"><i data-icon="shield" data-size="14"></i></div>
+              <span>تم الاستلام</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Content Stage Views -->
+      <div class="container page">
+        <!-- VIEW 1: LIVE TRACKING -->
+        <div class="view" data-view="track">
+          <div class="stack-lg">
+            <!-- LIVE SUBSTITUTION ALERT BANNER (Flashing if picker suggested sub) -->
+            <div id="subAlertContainer"></div>
+
+            <!-- LIVE HERO PROGRESS CARD -->
+            <div id="customerHeroCardWrap"></div>
+
+            <!-- LIVE ITEMS CHECKLIST HIGHLIGHT -->
+            <div>
+              <div class="section-title">
+                <h2>أصناف الطلب وحالة التجميع</h2>
+                <span id="itemsDoneHeader" class="num">0 / 0 صنف</span>
+              </div>
+              <div class="list" id="customerTrackItemsList"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 2: ITEMS FULL MANAGEMENT -->
+        <div class="view" data-view="items">
+          <div class="stack">
+            <div class="section-title">
+              <h2>محتويات الفاتورة</h2>
+              <span id="orderEditDeadline" class="badge b-gold" hidden>متاح التعديل</span>
+            </div>
+            <div class="list" id="customerFullItemsList"></div>
+            <div class="card soft" id="orderFinancialSummary"></div>
+          </div>
+        </div>
+
+        <!-- VIEW 3: CATALOG & SHOPPING -->
+        <div class="view" data-view="shop">
+          <div class="stack-lg">
+            <!-- Search Bar -->
+            <div class="searchbar">
+              <i data-icon="search" data-size="20" style="color: var(--text-3);"></i>
+              <input type="text" id="shopSearchInput" placeholder="ابحث عن أرز، زيت، حليب، خضار...">
+            </div>
+
+            <!-- Department Filter Chips -->
+            <div class="chips" id="deptFilterChips"></div>
+
+            <!-- Products Grid -->
+            <div>
+              <div class="section-title">
+                <h2 id="catalogSectionTitle">الأصناف المتاحة</h2>
+                <span id="catalogCount" class="num">0 صنف</span>
+              </div>
+              <div class="pgrid" id="catalogGrid"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      let orders = [];
+      let currentOrder = null;
+      let activeDept = 'all';
+      let searchQuery = '';
+      let cartBucket = []; // for local new cart creation if needed
+      let subTimerInterval = null;
+
+      // Mount Shell Navigation Immediately
+      Shell.mount({
+        role: 'customer',
+        initial: 'track',
+        tabs: [
+          { id: 'track', label: 'تتبع الطلب', icon: 'clock' },
+          { id: 'items', label: 'الأصناف', icon: 'list' },
+          { id: 'shop', label: 'تسوق وإضافة', icon: 'cart' }
+        ],
+        center: { id: 'cart', label: 'السلة', icon: 'bag', act: true },
+        onAction: act => {
+          if (act === 'cart') openCartSheet();
+        }
       });
 
-      renderAllIcons(document);
-    }
+      // Background seed if empty
+      AppDB.seedIfEmpty().catch(() => {});
 
-    function showSubstitutionBanner(sub) {
-      const banner = document.getElementById('subAlertBanner');
-      banner.style.display = 'block';
-      document.getElementById('subOriginalName').innerText = sub.originalItemName;
-      document.getElementById('subNewName').innerText = sub.substituteProduct.name;
-      document.getElementById('subNewPrice').innerText = `${sub.substituteProduct.price.toFixed(2)} ج.م`;
+      // Listen to Orders
+      AppDB.onOrders(all => {
+        orders = all;
+        if (!currentOrder && orders.length) {
+          // Prefer active orders
+          currentOrder = orders.find(o => !['completed', 'cancelled'].includes(o.status)) || orders[0];
+        } else if (currentOrder) {
+          currentOrder = orders.find(o => o.id === currentOrder.id) || orders[0];
+        }
+        renderCustomerUI();
+      });
 
-      if (subCountdownInterval) clearInterval(subCountdownInterval);
-      const updateTimer = () => {
-        const remainingMs = Math.max(0, (sub.expiresAt || (Date.now() + 180000)) - Date.now());
-        const totalSecs = Math.floor(remainingMs / 1000);
-        const mins = String(Math.floor(totalSecs / 60)).padStart(2, '0');
-        const secs = String(totalSecs % 60).padStart(2, '0');
-        document.getElementById('subTimer').innerText = `${mins}:${secs}`;
-        if (remainingMs <= 0) clearInterval(subCountdownInterval);
+      // Switch Order Sheet
+      document.getElementById('switchOrderBtn').addEventListener('click', () => {
+        Shell.openSheet({
+          title: 'اختر الطلب للمتابعة',
+          html: `
+            <div class="list">
+              ${orders.map(o => `
+                <div class="irow between" style="cursor: pointer;" onclick="selectOrder('${o.id}')">
+                  <div class="row">
+                    <span class="bin ${o.bin || 'C'}">${o.bin || '—'}</span>
+                    <div>
+                      <b>${o.customer.name} • <span class="num">${o.id}</span></b>
+                      <small class="muted" style="display: block;">إجمالي: ${Shell.money(o.total)}</small>
+                    </div>
+                  </div>
+                  <span class="badge ${o.status === 'ready' ? 'b-ok' : o.status === 'completed' ? 'b-mute' : 'b-gold'}">
+                    ${o.status === 'ready' ? 'جاهز' : o.status === 'completed' ? 'مكتمل' : 'قيد التجهيز'}
+                  </span>
+                </div>
+              `).join('')}
+            </div>`
+        });
+        Icons.mount();
+      });
+
+      window.selectOrder = id => {
+        currentOrder = orders.find(o => o.id === id);
+        Shell.closeSheet();
+        renderCustomerUI();
       };
-      updateTimer();
-      subCountdownInterval = setInterval(updateTimer, 1000);
 
-      document.getElementById('acceptSubBtn').onclick = async () => {
-        await AppDB.respondSubstitution(currentOrder.id, sub.id, 'accepted');
-        banner.style.display = 'none';
-        clearInterval(subCountdownInterval);
-      };
+      function renderCustomerUI() {
+        if (!currentOrder) return;
+        const o = currentOrder;
 
-      document.getElementById('rejectSubBtn').onclick = async () => {
-        await AppDB.respondSubstitution(currentOrder.id, sub.id, 'rejected');
-        banner.style.display = 'none';
-        clearInterval(subCountdownInterval);
-      };
-    }
+        // Auto expire substitutions
+        Logic.expireSubs(o);
 
-    const tabTrackBtn = document.getElementById('tabTrackBtn');
-    const tabShopBtn = document.getElementById('tabShopBtn');
-    const trackingView = document.getElementById('trackingView');
-    const shopView = document.getElementById('shopView');
-    const shopBottomBar = document.getElementById('shopBottomBar');
-    const regularDock = document.getElementById('regularDock');
+        // Header info
+        document.getElementById('customerHeaderName').textContent = `أهلاً، ${Shell.firstName(o.customer.name)}`;
+        document.getElementById('customerOrderIdTag').textContent = o.id;
 
-    tabTrackBtn.addEventListener('click', () => {
-      tabTrackBtn.style.background = '#FFFFFF';
-      tabTrackBtn.style.color = 'var(--text-primary)';
-      tabTrackBtn.style.boxShadow = 'var(--shadow-sm)';
-      tabShopBtn.style.background = 'transparent';
-      tabShopBtn.style.color = 'var(--text-muted)';
-      tabShopBtn.style.boxShadow = 'none';
-      trackingView.style.display = 'flex';
-      shopView.style.display = 'none';
-      shopBottomBar.style.display = 'none';
-      regularDock.style.display = 'flex';
-    });
+        // Journey Stepper state
+        const sPicking = document.getElementById('stepPicking');
+        const sReady = document.getElementById('stepReady');
+        const sCompleted = document.getElementById('stepCompleted');
 
-    tabShopBtn.addEventListener('click', () => {
-      tabShopBtn.style.background = '#FFFFFF';
-      tabShopBtn.style.color = 'var(--text-primary)';
-      tabShopBtn.style.boxShadow = 'var(--shadow-sm)';
-      tabTrackBtn.style.background = 'transparent';
-      tabTrackBtn.style.color = 'var(--text-muted)';
-      tabTrackBtn.style.boxShadow = 'none';
-      trackingView.style.display = 'none';
-      shopView.style.display = 'flex';
-      shopBottomBar.style.display = 'flex';
-      regularDock.style.display = 'none';
-      loadShopCatalog();
-    });
+        sPicking.className = 'jstep';
+        sReady.className = 'jstep';
+        sCompleted.className = 'jstep';
 
-    async function loadShopCatalog() {
-      const products = await AppDB.getProducts();
-      const list = document.getElementById('catalogList');
-      list.innerHTML = '';
-      products.forEach(p => {
-        const itemCard = document.createElement('div');
-        itemCard.className = 'card-white';
-        itemCard.style.padding = '14px 18px';
-        itemCard.innerHTML = `
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-              <div style="font-size: 0.78rem; color: var(--text-muted);">${p.aisle}</div>
-              <div style="font-weight: 600; color: var(--text-primary); font-size: 0.95rem;">${p.name}</div>
-              <div class="num" style="font-weight: 700; color: var(--brand-amber); margin-top: 4px;">${p.price.toFixed(2)} ج.م</div>
+        if (o.status === 'new') {
+          sPicking.classList.add('now');
+        } else if (o.status === 'picking') {
+          sPicking.classList.add('now');
+        } else if (o.status === 'ready') {
+          sPicking.classList.add('done');
+          sReady.classList.add('now');
+        } else if (o.status === 'completed') {
+          sPicking.classList.add('done');
+          sReady.classList.add('done');
+          sCompleted.classList.add('done');
+        }
+
+        renderHeroCard(o);
+        renderSubAlert(o);
+        renderTrackChecklist(o);
+        renderFullItemsList(o);
+        renderCatalog();
+        Icons.mount();
+      }
+
+      // Render Hero Card
+      function renderHeroCard(o) {
+        const wrap = document.getElementById('customerHeroCardWrap');
+        const prog = Logic.progress(o);
+        const eta = Logic.etaMin(o);
+
+        let stageTitle = 'جاري تجميع الأصناف من الممرات بالعربة الذكية';
+        let subText = `المُحضّر المخصص يتنقل في الممرات عبر أقصر مسار لجمع طلبك`;
+        if (o.status === 'ready') {
+          stageTitle = 'اكتمل تجهيز طلبك! جاهز عند الكاشير';
+          subText = 'يمكنك التوجه فوراً لبوابة الكاشير والتخليص السريع بدون طوابير';
+        } else if (o.status === 'completed') {
+          stageTitle = 'تم تسليم الطلب واعتماد الفاتورة بنجاح';
+          subText = 'شكراً لتسوقك معنا في هايبر الواحة';
+        }
+
+        wrap.innerHTML = `
+          <div class="card forest" style="box-shadow: var(--shadow-2);">
+            <div class="row between" style="margin-bottom: 16px;">
+              <span class="badge b-glass">
+                <span class="live-dot" style="background: #5FD6A0"></span>
+                <span>تتبع حي لحظي</span>
+              </span>
+              <div class="row-sm">
+                <i data-icon="timer" data-size="16" style="color: var(--gold);"></i>
+                <span style="font-size: 13px;">الوقت المتوقع: <b class="num" style="color: var(--gold);">${eta} دقيقة</b></span>
+              </div>
             </div>
-            <div>
-              <button class="btn-action btn-dark add-to-cart-btn" style="width: auto; padding: 10px 18px; font-size: 0.85rem;" data-id="${p.id}">
-                <i data-icon="plus" class="icon-sm"></i>
-                <span>إضافة</span>
+
+            <div class="row" style="gap: 20px; align-items: center; margin-bottom: 20px;">
+              ${Shell.ring(prog.pct, 80)}
+              <div class="grow" style="min-width: 0;">
+                <h3 class="t-h2" style="color: #F4F1E8; margin-bottom: 6px; font-size: 18px; line-height: 1.35;">
+                  ${stageTitle}
+                </h3>
+                <p class="muted" style="font-size: 13px; line-height: 1.5;">${subText}</p>
+              </div>
+            </div>
+
+            <div class="row between" style="padding-top: 14px; border-top: 1px solid rgba(244,241,232,.12); font-size: 13px;">
+              <div class="row-sm">
+                <i data-icon="cart" data-size="16" style="color: var(--gold);"></i>
+                <span>عربة التجميع: <b class="num">${o.cartId || 'بانتظار التخصيص'}</b></span>
+              </div>
+              <div class="row-sm">
+                <span class="muted">الإجمالي:</span>
+                <span class="num" style="font-size: 16px; font-weight: 700; color: var(--gold);">${Shell.money(o.total)}</span>
+              </div>
+            </div>
+          </div>`;
+      }
+
+      // Render Substitution Banner with 3-minute Live Countdown
+      function renderSubAlert(o) {
+        const wrap = document.getElementById('subAlertContainer');
+        const subs = Logic.pendingSubs(o);
+
+        if (!subs.length) {
+          wrap.innerHTML = '';
+          if (subTimerInterval) clearInterval(subTimerInterval);
+          return;
+        }
+
+        const s = subs[0];
+        const timeLeftMs = Math.max(0, s.expiresAt - Date.now());
+
+        wrap.innerHTML = `
+          <div class="card" style="background: linear-gradient(135deg, #FFF8E6, #FEF2D0); border: 2px solid var(--gold); box-shadow: var(--shadow-2); animation: rise .4s var(--ease) both;">
+            <div class="row between" style="margin-bottom: 10px;">
+              <div class="row-sm">
+                <span class="badge b-warn"><i data-icon="alert" data-size="14"></i><span>تنبيه بديل صنف</span></span>
+                <b style="font-size: 14px; color: #8A5E12;">صنف غير متوفر بالمخزن</b>
+              </div>
+              <div class="row-sm num" id="subCountdownText" style="font-weight: 700; color: var(--bad); font-size: 14px;">
+                ${Shell.mmss(timeLeftMs)}
+              </div>
+            </div>
+
+            <p style="font-size: 13.5px; color: #5C4008; margin-bottom: 12px; line-height: 1.5;">
+              صنف <b>"${s.fromName}"</b> غير متاح حالياً. يقترح المُحضّر البديل التالي من نفس الممر:
+            </p>
+
+            <div class="irow between" style="background: #FFFFFF; border-radius: var(--r-md); margin-bottom: 14px; padding: 12px;">
+              <div class="row" style="gap: 12px;">
+                <div class="tile tile-sm t-${Catalog.dept(s.to.dept)?.tint || 'sand'}">${Art.dept(s.to.dept)}</div>
+                <div>
+                  <b style="font-size: 15px;">${s.to.name}</b>
+                  <div class="sub row-sm">
+                    <span class="num">${s.to.qty} ${s.to.unit}</span>
+                    <span>•</span>
+                    <span class="num">${Shell.money(s.to.price)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row" style="gap: 10px;">
+              <button class="btn btn-gold grow" onclick="respondSub('${o.id}', '${s.id}', 'accepted')">
+                <i data-icon="check" data-size="18"></i>
+                <span>الموافقة على البديل</span>
+              </button>
+              <button class="btn btn-bad grow" onclick="respondSub('${o.id}', '${s.id}', 'rejected')">
+                <i data-icon="x" data-size="18"></i>
+                <span>رفض وحذف الصنف</span>
+              </button>
+            </div>
+          </div>`;
+
+        if (subTimerInterval) clearInterval(subTimerInterval);
+        subTimerInterval = setInterval(() => {
+          const rem = Math.max(0, s.expiresAt - Date.now());
+          const el = document.getElementById('subCountdownText');
+          if (el) el.textContent = Shell.mmss(rem);
+          if (rem <= 0) {
+            clearInterval(subTimerInterval);
+            Logic.expireSubs(o);
+            AppDB.update(o.id, ord => Logic.expireSubs(ord));
+          }
+        }, 1000);
+      }
+
+      window.respondSub = async (orderId, subId, decision) => {
+        await AppDB.update(orderId, o => Logic.answerSub(o, subId, decision));
+        Shell.toast(decision === 'accepted' ? 'تم اعتماد البديل بنجاح' : 'تم استبعاد الصنف من الطلب', { tone: 'ok' });
+      };
+
+      // Render Track Checklist
+      function renderTrackChecklist(o) {
+        const list = document.getElementById('customerTrackItemsList');
+        const live = Logic.liveItems(o);
+        const done = live.filter(i => i.status === 'picked').length;
+        document.getElementById('itemsDoneHeader').textContent = `${done} / ${live.length} صنف`;
+
+        list.innerHTML = live.map(it => {
+          const isPicked = it.status === 'picked';
+          return `
+            <div class="irow ${isPicked ? 'flash' : ''}" style="transition: all .3s;">
+              <div class="tile tile-sm t-${Catalog.dept(it.dept)?.tint || 'sand'}">${Art.dept(it.dept)}</div>
+              <div class="grow" style="min-width: 0;">
+                <div class="nm" style="${isPicked ? 'text-decoration: line-through; color: var(--fg-2);' : ''}">${it.name}</div>
+                <div class="sub row-sm">
+                  <span class="num">${Shell.qtyText(it)}</span>
+                  <span>•</span>
+                  <span class="num">${Shell.money(it.price)}</span>
+                </div>
+              </div>
+              <div style="flex: none;">
+                ${isPicked ? `
+                  <span class="badge b-ok row-sm">
+                    <i data-icon="check-circle" data-size="15"></i>
+                    <span>تم التجميع</span>
+                  </span>` : `
+                  <span class="badge b-mute row-sm">
+                    <i data-icon="clock" data-size="14"></i>
+                    <span>في الانتظار</span>
+                  </span>`}
+              </div>
+            </div>`;
+        }).join('');
+      }
+
+      // Render Full Items List (Editable if editable window active)
+      function renderFullItemsList(o) {
+        const list = document.getElementById('customerFullItemsList');
+        const editable = Logic.isEditable(o);
+        const deadlineBadge = document.getElementById('orderEditDeadline');
+        deadlineBadge.hidden = !editable;
+
+        list.innerHTML = o.items.map(it => `
+          <div class="irow between">
+            <div class="row">
+              <div class="tile tile-sm t-${Catalog.dept(it.dept)?.tint || 'sand'}">${Art.dept(it.dept)}</div>
+              <div>
+                <b>${it.name}</b>
+                <div class="sub row-sm">
+                  <span class="num">${Shell.qtyText(it)}</span>
+                  <span>•</span>
+                  <span class="num">${Shell.money(it.price)}</span>
+                </div>
+              </div>
+            </div>
+            <div class="row-sm">
+              <span class="badge ${it.status === 'picked' ? 'b-ok' : it.status === 'cancelled' ? 'b-bad' : 'b-mute'}">
+                ${it.status === 'picked' ? 'تم جمعه' : it.status === 'cancelled' ? 'ملغي' : 'معلق'}
+              </span>
+              ${editable && it.status === 'pending' ? `
+                <button class="icon-btn sm ghost" onclick="removeItemFromOrder('${o.id}', '${it.id}')" title="حذف الصنف">
+                  <i data-icon="trash" data-size="16" style="color: var(--bad);"></i>
+                </button>` : ''}
+            </div>
+          </div>
+        `).join('');
+
+        document.getElementById('orderFinancialSummary').innerHTML = `
+          <div class="row between" style="margin-bottom: 8px;">
+            <span class="muted">قيمة الأصناف:</span>
+            <span class="num">${Shell.money(o.total)}</span>
+          </div>
+          <div class="row between" style="margin-bottom: 8px;">
+            <span class="muted">رسوم التجهيز السريع:</span>
+            <span class="badge b-ok">مجاناً</span>
+          </div>
+          <div class="row between" style="padding-top: 10px; border-top: 1px dashed var(--line); font-size: 16px; font-weight: 700;">
+            <span>المجموع النهائي:</span>
+            <span class="num" style="color: var(--gold-deep);">${Shell.money(o.total)}</span>
+          </div>`;
+      }
+
+      window.removeItemFromOrder = async (orderId, itemId) => {
+        if (confirm('هل ترغب في حذف هذا الصنف من الطلب؟')) {
+          await AppDB.update(orderId, o => Logic.removeItem(o, itemId));
+          Shell.toast('تم حذف الصنف من الطلب', { tone: 'ok' });
+        }
+      };
+
+      // Catalog & Shopping
+      function renderCatalog() {
+        // Render Department filter chips
+        const chips = document.getElementById('deptFilterChips');
+        chips.innerHTML = `<button class="chip ${activeDept === 'all' ? 'on' : ''}" onclick="filterDept('all')">كل الأقسام</button>` +
+          Catalog.DEPTS.map(d => `
+            <button class="chip ${activeDept === d.id ? 'on' : ''}" onclick="filterDept('${d.id}')">
+              ${d.name}
+            </button>
+          `).join('');
+
+        // Filter products
+        let prods = Catalog.products;
+        if (activeDept !== 'all') prods = prods.filter(p => p.dept === activeDept);
+        if (searchQuery) prods = prods.filter(p => p.name.includes(searchQuery));
+
+        document.getElementById('catalogCount').textContent = `${prods.length} صنف`;
+
+        const grid = document.getElementById('catalogGrid');
+        grid.innerHTML = prods.map(p => `
+          <div class="pcard">
+            <div class="tile t-${Catalog.dept(p.dept)?.tint || 'sand'}">${Art.dept(p.dept)}</div>
+            <div class="pname">${p.name}</div>
+            <div class="pfoot">
+              <div class="price num">${Shell.money(p.price)}<small>/ ${p.unit}</small></div>
+              <button class="add-btn" onclick="addToOrder('${p.id}')" title="إضافة للطلب">
+                <i data-icon="plus" data-size="18"></i>
               </button>
             </div>
           </div>
-        `;
-        list.appendChild(itemCard);
-      });
-
-      document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const pid = btn.getAttribute('data-id');
-          const found = products.find(x => x.id === pid);
-          if (found) {
-            localCart.push(found);
-            updateCartTotals();
-            AudioFeedback.success();
-          }
-        });
-      });
-
-      renderAllIcons(document);
-    }
-
-    function updateCartTotals() {
-      document.getElementById('cartCount').innerText = localCart.length;
-      const sum = localCart.reduce((acc, it) => acc + it.price, 0);
-      document.getElementById('cartTotal').innerText = `${sum.toFixed(2)} ج.م`;
-    }
-
-    document.getElementById('submitOrderBtn').addEventListener('click', () => {
-      if (localCart.length === 0) {
-        alert('يرجى إضافة منتجات إلى السلة أولاً!');
-        return;
+        `).join('');
       }
 
-      fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          customerName: 'عميل تجريبي جديد',
-          customerPhone: '01012345678',
-          items: localCart.map(it => ({ productId: it.id, quantity: 1 }))
-        })
-      })
-      .then(res => res.json())
-      .then(newOrder => {
-        currentOrderId = newOrder.id;
-        currentOrder = newOrder;
-        localCart = [];
-        updateCartTotals();
-        tabTrackBtn.click();
-        AudioFeedback.complete();
-        alert(`تم إرسال طلبك (${newOrder.id}) بنجاح إلى شاشة العربة!`);
+      window.filterDept = deptId => {
+        activeDept = deptId;
+        renderCatalog();
+        Icons.mount();
+      };
+
+      document.getElementById('shopSearchInput').addEventListener('input', e => {
+        searchQuery = e.target.value.trim();
+        renderCatalog();
+        Icons.mount();
       });
+
+      window.addToOrder = async productId => {
+        const prod = Catalog.byId(productId);
+        if (!prod) return;
+
+        if (currentOrder && Logic.isEditable(currentOrder)) {
+          // Add directly to active order!
+          await AppDB.update(currentOrder.id, o => Logic.addLines(o, [{ pid: prod.id, qty: 1 }]));
+          Shell.toast(`تمت إضافة "${prod.name}" لطلبك النشط (${currentOrder.id})`, { tone: 'ok' });
+        } else {
+          // Add to local cart bucket
+          const ex = cartBucket.find(x => x.pid === prod.id);
+          if (ex) ex.qty++; else cartBucket.push({ pid: prod.id, qty: 1 });
+          Shell.badge('cart', cartBucket.reduce((s, x) => s + x.qty, 0));
+          Shell.toast(`تمت إضافة "${prod.name}" للسلة`, { tone: 'ok' });
+        }
+      };
+
+      // Cart Bottom Sheet
+      function openCartSheet() {
+        if (currentOrder && Logic.isEditable(currentOrder)) {
+          Shell.openSheet({
+            title: `سلة الطلب النشط (${currentOrder.id})`,
+            html: `
+              <div class="stack">
+                <div class="badge b-ok" style="margin-bottom: 6px;">يمكنك إضافة أصناف إضافية وسيتم توجيهها لمسار المُحضّر مباشرة</div>
+                <div class="list">
+                  ${currentOrder.items.map(it => `
+                    <div class="row between" style="padding: 10px 0; border-bottom: 1px dashed var(--line);">
+                      <b>${it.name}</b>
+                      <span class="num">${it.qty} ${it.unit} • ${Shell.money(it.price)}</span>
+                    </div>
+                  `).join('')}
+                </div>
+                <div class="row between" style="margin-top: 14px; font-size: 16px; font-weight: 700;">
+                  <span>الإجمالي:</span>
+                  <span class="num" style="color: var(--gold-deep);">${Shell.money(currentOrder.total)}</span>
+                </div>
+              </div>`
+          });
+          return;
+        }
+
+        // Bucket for new order creation
+        if (!cartBucket.length) {
+          Shell.openSheet({
+            title: 'سلة التسوق فارغة',
+            html: `<div class="empty">${Art.cart(false, 'art')}<h3>السلة فارغة حالياً</h3><p>تصفح كتالوج المتجر واضغط على زر (+) لإضافة الأصناف.</p></div>`
+          });
+          return;
+        }
+
+        const lines = cartBucket.map(b => ({ prod: Catalog.byId(b.pid), qty: b.qty }));
+        const total = lines.reduce((s, l) => s + l.prod.price * l.qty, 0);
+
+        Shell.openSheet({
+          title: 'إنشاء طلب جديد',
+          html: `
+            <div class="stack">
+              <div class="list">
+                ${lines.map(l => `
+                  <div class="row between" style="padding: 8px 0; border-bottom: 1px dashed var(--line);">
+                    <div><b>${l.prod.name}</b><small class="muted" style="display:block;">${Shell.money(l.prod.price)} / ${l.prod.unit}</small></div>
+                    <span class="num">الكمية: <b>${l.qty}</b></span>
+                  </div>
+                `).join('')}
+              </div>
+              <div class="row between" style="margin-top: 14px; font-size: 17px; font-weight: 700;">
+                <span>إجمالي الطلب:</span>
+                <span class="num" style="color: var(--gold-deep);">${Shell.money(total)}</span>
+              </div>
+              <button class="btn btn-gold block lg" id="confirmNewOrderBtn" style="margin-top: 14px;">
+                <i data-icon="check" data-size="20"></i>
+                <span>تأكيد وإرسال الطلب لعربة التجهيز</span>
+              </button>
+            </div>`,
+          onMount: body => {
+            body.querySelector('#confirmNewOrderBtn').addEventListener('click', async () => {
+              const newOrder = Logic.makeOrder({
+                name: 'عميل جديد',
+                lines: cartBucket
+              });
+              await AppDB.put(newOrder);
+              cartBucket = [];
+              Shell.badge('cart', 0);
+              currentOrder = newOrder;
+              Shell.closeSheet();
+              Shell.go('track');
+              Shell.toast('تم إرسال طلبك الجديد بنجاح!', { tone: 'ok' });
+            });
+          }
+        });
+        Icons.mount();
+      }
     });
   </script>
 </body>
