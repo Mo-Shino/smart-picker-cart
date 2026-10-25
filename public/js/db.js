@@ -1,26 +1,30 @@
-// Unified Data & Realtime Synchronization Layer
-// Supports both: 1) Supabase (Cloud & Vercel deployment), 2) Local/Socket.io Fallback
+// Universal Data & Realtime Sync Layer: Powered by Google Firebase Firestore (with Local Fallback)
 
 const AppDB = (() => {
-  let supabaseClient = null;
-  let activeChannel = null;
-  let isSupabaseActive = false;
+  let firestore = null;
+  let isFirebaseActive = false;
+  let activeUnsubscribe = null;
 
-  // Read saved Supabase credentials from localStorage or global config
-  const savedUrl = localStorage.getItem('SP_SUPABASE_URL') || (window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.url) || '';
-  const savedKey = localStorage.getItem('SP_SUPABASE_KEY') || (window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.key) || '';
+  // Initial demo order structure
+  const defaultOrder = {
+    id: 'ORD-101',
+    customerName: 'كريم محمود',
+    customerPhone: '01098765432',
+    status: 'assigned',
+    cartId: 'CART-01',
+    pickerName: 'أحمد طارق (مُحضّر)',
+    totalAmount: 204.50,
+    createdAt: new Date().toISOString(),
+    items: [
+      { id: 'item-1', productId: 'prod-1', name: 'أرز مصري فاخر 1 كجم', barcode: '6221001001011', category: 'حبوب وبقوليات', aisle: 'ممر 1A - رف 01', aisleOrder: 1, price: 32.50, unit: 'كيس', requiredQty: 1, pickedQty: 0, status: 'pending' },
+      { id: 'item-2', productId: 'prod-4', name: 'زيت ذرة نقي 800 مل', barcode: '6221002002018', category: 'زيوت وسمن', aisle: 'ممر 1A - رف 03', aisleOrder: 2, price: 75.00, unit: 'زجاجة', requiredQty: 1, pickedQty: 0, status: 'pending' },
+      { id: 'item-3', productId: 'prod-8', name: 'حليب كامل الدسم 1 لتر', barcode: '6221004004012', category: 'ألبان وأجبان', aisle: 'ممر 2A - ثلاجة 01', aisleOrder: 4, price: 42.00, unit: 'عبوة', requiredQty: 1, pickedQty: 0, status: 'pending' },
+      { id: 'item-4', productId: 'prod-13', name: 'خبز توست أبيض فاخر', barcode: '6221006006016', category: 'مخبوزات هشة', aisle: 'ممر 3A - رف 01', aisleOrder: 6, price: 25.00, unit: 'كيس', requiredQty: 1, pickedQty: 0, status: 'pending' },
+      { id: 'item-5', productId: 'prod-16', name: 'موز بلدي فاخر (طازج)', barcode: '2000016011005', category: 'خضار وفواكه طازجة', aisle: 'ممر 3B - قسم الفواكه', aisleOrder: 7, price: 30.00, unit: 'كجم', requiredQty: 1, pickedQty: 0, status: 'pending' }
+    ],
+    substitutionRequests: []
+  };
 
-  if (savedUrl && savedKey && window.supabase) {
-    try {
-      supabaseClient = window.supabase.createClient(savedUrl, savedKey);
-      isSupabaseActive = true;
-      console.log('⚡ Connected to Supabase Realtime Cloud!');
-    } catch (e) {
-      console.warn('Failed to init Supabase client:', e);
-    }
-  }
-
-  // Fallback local products dataset
   const localProducts = [
     { id: 'prod-1', name: 'أرز مصري فاخر 1 كجم', barcode: '6221001001011', category: 'حبوب وبقوليات', aisle: 'ممر 1A - رف 01', aisleOrder: 1, price: 32.50, unit: 'كيس' },
     { id: 'prod-2', name: 'أرز بسمتي هندي 1 كجم', barcode: '6221001001028', category: 'حبوب وبقوليات', aisle: 'ممر 1A - رف 01', aisleOrder: 1, price: 68.00, unit: 'كيس' },
@@ -40,142 +44,93 @@ const AppDB = (() => {
     { id: 'prod-16', name: 'موز بلدي فاخر (طازج)', barcode: '2000016011005', category: 'خضار وفواكه طازجة', aisle: 'ممر 3B - قسم الفواكه', aisleOrder: 7, price: 30.00, unit: 'كجم' }
   ];
 
-  // Helper for Cross-Tab / Cross-Window Local BroadcastChannel
+  // Try to load Firebase config
+  let firebaseConfig = null;
+  const savedConfigStr = localStorage.getItem('SP_FIREBASE_CONFIG');
+  if (savedConfigStr) {
+    try { firebaseConfig = JSON.parse(savedConfigStr); } catch (e) {}
+  }
+  if (!firebaseConfig && window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) {
+    firebaseConfig = window.FIREBASE_CONFIG;
+  }
+
+  // Initialize Firebase if config exists
+  if (firebaseConfig && firebaseConfig.apiKey && window.firebase) {
+    try {
+      if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
+      firestore = firebase.firestore();
+      isFirebaseActive = true;
+      console.log('🔥 Connected to Google Firebase Firestore Realtime Cloud!');
+    } catch (err) {
+      console.warn('Firebase initialization error:', err);
+    }
+  }
+
   const broadcastChan = window.BroadcastChannel ? new BroadcastChannel('smart_cart_sync') : null;
 
-  // 1. Fetch Products
+  // 1. Get Products
   async function getProducts() {
-    if (isSupabaseActive) {
+    if (isFirebaseActive) {
       try {
-        const { data, error } = await supabaseClient.from('products').select('*').order('aisle_order');
-        if (!error && data && data.length > 0) {
-          return data.map(p => ({
-            id: p.id,
-            name: p.name,
-            barcode: p.barcode,
-            category: p.category,
-            aisle: p.aisle,
-            aisleOrder: p.aisle_order,
-            price: parseFloat(p.price),
-            unit: p.unit
-          }));
+        const snap = await firestore.collection('products').orderBy('aisleOrder').get();
+        if (!snap.empty) {
+          return snap.docs.map(d => ({ id: d.id, ...d.data() }));
         }
-      } catch (e) {
-        console.warn('Supabase fetch products error, fallback to local:', e);
-      }
+      } catch (e) {}
     }
-    
-    // Fallback local API or mock
-    try {
-      const res = await fetch('/api/products');
-      if (res.ok) return await res.json();
-    } catch (e) {}
-
     return localProducts;
   }
 
-  // 2. Fetch Order with Items and Substitutions
+  // 2. Get Order & Auto-Seed if new
   async function getOrder(orderId = 'ORD-101') {
-    if (isSupabaseActive) {
+    if (isFirebaseActive) {
       try {
-        const { data: orderData, error: orderErr } = await supabaseClient
-          .from('orders')
-          .select('*')
-          .eq('id', orderId)
-          .single();
-
-        if (!orderErr && orderData) {
-          const { data: itemsData } = await supabaseClient
-            .from('order_items')
-            .select('*')
-            .eq('order_id', orderId)
-            .order('aisle_order');
-
-          const { data: subsData } = await supabaseClient
-            .from('substitutions')
-            .select('*')
-            .eq('order_id', orderId);
-
-          return {
-            id: orderData.id,
-            customerName: orderData.customer_name,
-            customerPhone: orderData.customer_phone,
-            status: orderData.status,
-            cartId: orderData.cart_id,
-            totalAmount: parseFloat(orderData.total_amount),
-            items: (itemsData || []).map(i => ({
-              id: i.id,
-              orderId: i.order_id,
-              productId: i.product_id,
-              name: i.name,
-              barcode: i.barcode,
-              category: i.category,
-              aisle: i.aisle,
-              aisleOrder: i.aisle_order,
-              price: parseFloat(i.price),
-              unit: i.unit,
-              requiredQty: i.required_qty,
-              pickedQty: i.picked_qty,
-              status: i.status
-            })),
-            substitutionRequests: (subsData || []).map(s => ({
-              id: s.id,
-              itemId: s.item_id,
-              originalItemName: s.original_name,
-              substituteProduct: {
-                id: s.substitute_product_id,
-                name: s.substitute_name,
-                price: parseFloat(s.substitute_price)
-              },
-              status: s.status,
-              expiresAt: Number(s.expires_at)
-            }))
-          };
+        const docRef = firestore.collection('orders').doc(orderId);
+        const doc = await docRef.get();
+        if (doc.exists) {
+          return { id: doc.id, ...doc.data() };
+        } else {
+          // Auto-seed initial order into Firebase!
+          await docRef.set(defaultOrder);
+          return defaultOrder;
         }
       } catch (e) {
-        console.warn('Supabase fetch order error:', e);
+        console.warn('Firebase getOrder error:', e);
       }
     }
 
-    // Fallback to Local REST API
+    // Local / Socket fallback
     try {
       const res = await fetch(`/api/orders/${orderId}`);
       if (res.ok) return await res.json();
     } catch (e) {}
 
-    // Fallback to LocalStorage
     const stored = localStorage.getItem(`order_${orderId}`);
     if (stored) return JSON.parse(stored);
 
-    return null;
+    return defaultOrder;
   }
 
-  // 3. Subscribe to Real-Time Updates (Supabase Realtime OR Socket.io / BroadcastChannel)
+  // 3. Subscribe to Real-Time Updates (Firebase onSnapshot)
   function subscribeOrder(orderId, callback) {
-    if (isSupabaseActive) {
-      if (activeChannel) {
-        supabaseClient.removeChannel(activeChannel);
-      }
-
-      activeChannel = supabaseClient.channel(`order-channel-${orderId}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` }, async () => {
-          const updated = await getOrder(orderId);
-          callback(updated);
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items', filter: `order_id=eq.${orderId}` }, async () => {
-          const updated = await getOrder(orderId);
-          callback(updated);
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'substitutions', filter: `order_id=eq.${orderId}` }, async () => {
-          const updated = await getOrder(orderId);
-          callback(updated);
-        })
-        .subscribe((status) => {
-          console.log(`Supabase Realtime subscription status for ${orderId}:`, status);
-        });
+    if (isFirebaseActive) {
+      if (activeUnsubscribe) activeUnsubscribe();
+      
+      const docRef = firestore.collection('orders').doc(orderId);
+      activeUnsubscribe = docRef.onSnapshot((doc) => {
+        if (doc.exists) {
+          const data = { id: doc.id, ...doc.data() };
+          callback(data);
+        } else {
+          docRef.set(defaultOrder);
+        }
+      }, (err) => {
+        console.warn('Firestore onSnapshot error:', err);
+      });
     }
 
-    // Also listen on local BroadcastChannel
     if (broadcastChan) {
       broadcastChan.onmessage = (evt) => {
         if (evt.data && evt.data.orderId === orderId && evt.data.order) {
@@ -187,11 +142,13 @@ const AppDB = (() => {
 
   // 4. Scan Item Action
   async function scanItem(orderId, barcode) {
-    if (isSupabaseActive) {
+    if (isFirebaseActive) {
       try {
-        const order = await getOrder(orderId);
-        if (!order) return { success: false, message: 'الأوردر غير موجود' };
+        const docRef = firestore.collection('orders').doc(orderId);
+        const doc = await docRef.get();
+        if (!doc.exists) return { success: false, message: 'الأوردر غير موجود' };
 
+        const order = doc.data();
         const item = order.items.find(i => i.barcode === barcode.trim());
         if (!item) {
           return { success: false, message: 'الباركود غير موجود في طلب هذا العميل!' };
@@ -201,33 +158,22 @@ const AppDB = (() => {
           return { success: false, message: 'تم تجميع هذا الصنف بالكامل مسبقاً!' };
         }
 
-        const newPicked = (item.pickedQty || 0) + 1;
-        const newStatus = newPicked >= item.requiredQty ? 'picked' : 'pending';
+        item.pickedQty = (item.pickedQty || 0) + 1;
+        if (item.pickedQty >= item.requiredQty) {
+          item.status = 'picked';
+        }
 
-        // Update in Supabase
-        await supabaseClient
-          .from('order_items')
-          .update({ picked_qty: newPicked, status: newStatus })
-          .eq('id', item.id);
+        const allDone = order.items.every(i => i.status === 'picked' || i.status === 'substituted');
+        order.status = allDone ? 'ready_for_dispatch' : 'picking';
 
-        // Check if all are picked
-        const allDone = order.items.every(i => (i.id === item.id ? newStatus === 'picked' : (i.status === 'picked' || i.status === 'substituted')));
-        const orderStatus = allDone ? 'ready_for_dispatch' : 'picking';
-
-        await supabaseClient
-          .from('orders')
-          .update({ status: orderStatus })
-          .eq('id', orderId);
-
-        const updatedOrder = await getOrder(orderId);
-        notifyLocal(orderId, updatedOrder);
-        return { success: true, message: `تم مسح الصنف: ${item.name}`, order: updatedOrder };
+        await docRef.set(order, { merge: true });
+        notifyLocal(orderId, order);
+        return { success: true, message: `تم مسح الصنف: ${item.name}`, order };
       } catch (e) {
-        console.error('Scan in Supabase error:', e);
+        console.error('Scan in Firebase error:', e);
       }
     }
 
-    // Fallback to Socket.io or LocalStorage
     if (window.socket) {
       window.socket.emit('scan_item', { orderId, barcode });
       return { success: true, pendingSocket: true };
@@ -238,32 +184,37 @@ const AppDB = (() => {
 
   // 5. Request Substitution
   async function requestSubstitution(orderId, itemId, subProduct) {
-    if (isSupabaseActive) {
+    if (isFirebaseActive) {
       try {
-        const subId = `SUB-${Date.now()}`;
-        const expiresAt = Date.now() + (3 * 60 * 1000);
+        const docRef = firestore.collection('orders').doc(orderId);
+        const doc = await docRef.get();
+        if (!doc.exists) return;
 
-        // Update item status
-        await supabaseClient.from('order_items').update({ status: 'out_of_stock' }).eq('id', itemId);
+        const order = doc.data();
+        const item = order.items.find(i => i.id === itemId);
+        if (item) item.status = 'out_of_stock';
 
-        // Insert into substitutions table
-        await supabaseClient.from('substitutions').insert({
-          id: subId,
-          order_id: orderId,
-          item_id: itemId,
-          original_name: subProduct.originalName || 'صنف غير متوفر',
-          substitute_product_id: subProduct.id,
-          substitute_name: subProduct.name,
-          substitute_price: subProduct.price,
+        const subReq = {
+          id: `SUB-${Date.now()}`,
+          itemId,
+          originalItemName: item ? item.name : 'صنف غير متوفر',
+          substituteProduct: {
+            id: subProduct.id,
+            name: subProduct.name,
+            price: subProduct.price
+          },
           status: 'pending',
-          expires_at: expiresAt
-        });
+          expiresAt: Date.now() + (3 * 60 * 1000)
+        };
 
-        const updatedOrder = await getOrder(orderId);
-        notifyLocal(orderId, updatedOrder);
-        return { success: true, order: updatedOrder };
+        order.substitutionRequests = order.substitutionRequests || [];
+        order.substitutionRequests.push(subReq);
+
+        await docRef.set(order, { merge: true });
+        notifyLocal(orderId, order);
+        return { success: true, order };
       } catch (e) {
-        console.error('Substitution error:', e);
+        console.error('Firebase sub error:', e);
       }
     }
 
@@ -279,33 +230,39 @@ const AppDB = (() => {
 
   // 6. Respond to Substitution
   async function respondSubstitution(orderId, subRequestId, decision) {
-    if (isSupabaseActive) {
+    if (isFirebaseActive) {
       try {
-        await supabaseClient.from('substitutions').update({ status: decision }).eq('id', subRequestId);
+        const docRef = firestore.collection('orders').doc(orderId);
+        const doc = await docRef.get();
+        if (!doc.exists) return;
 
-        const order = await getOrder(orderId);
-        const subReq = order.substitutionRequests.find(s => s.id === subRequestId);
-
+        const order = doc.data();
+        const subReq = (order.substitutionRequests || []).find(s => s.id === subRequestId);
         if (subReq) {
-          if (decision === 'accepted') {
-            await supabaseClient.from('order_items').update({
-              name: `${subReq.substituteProduct.name} (بديل معتمد)`,
-              price: subReq.substituteProduct.price,
-              status: 'pending',
-              picked_qty: 0
-            }).eq('id', subReq.itemId);
-          } else {
-            await supabaseClient.from('order_items').update({
-              status: 'cancelled'
-            }).eq('id', subReq.itemId);
+          subReq.status = decision;
+          const item = order.items.find(i => i.id === subReq.itemId);
+          if (item) {
+            if (decision === 'accepted') {
+              item.name = `${subReq.substituteProduct.name} (بديل معتمد)`;
+              item.price = subReq.substituteProduct.price;
+              item.status = 'pending';
+              item.pickedQty = 0;
+            } else {
+              item.status = 'cancelled';
+            }
           }
         }
 
-        const updatedOrder = await getOrder(orderId);
-        notifyLocal(orderId, updatedOrder);
-        return { success: true, order: updatedOrder };
+        // Recalculate Total
+        order.totalAmount = order.items
+          .filter(i => i.status !== 'cancelled')
+          .reduce((sum, i) => sum + (i.price * i.requiredQty), 0);
+
+        await docRef.set(order, { merge: true });
+        notifyLocal(orderId, order);
+        return { success: true, order };
       } catch (e) {
-        console.error('Respond sub error:', e);
+        console.error('Firebase respond sub error:', e);
       }
     }
 
@@ -316,18 +273,21 @@ const AppDB = (() => {
 
   // 7. Dispatch Order (Cashier)
   async function dispatchOrder(orderId, cashierId = 'POS-01') {
-    if (isSupabaseActive) {
+    if (isFirebaseActive) {
       try {
-        await supabaseClient.from('orders').update({
+        const docRef = firestore.collection('orders').doc(orderId);
+        await docRef.update({
           status: 'completed',
-          dispatched_at: new Date().toISOString()
-        }).eq('id', orderId);
+          dispatchedAt: new Date().toISOString(),
+          cashierId
+        });
 
-        const updatedOrder = await getOrder(orderId);
-        notifyLocal(orderId, updatedOrder);
-        return { success: true, order: updatedOrder };
+        const updatedDoc = await docRef.get();
+        const order = updatedDoc.data();
+        notifyLocal(orderId, order);
+        return { success: true, order };
       } catch (e) {
-        console.error('Dispatch error:', e);
+        console.error('Firebase dispatch error:', e);
       }
     }
 
@@ -344,7 +304,7 @@ const AppDB = (() => {
   }
 
   return {
-    isSupabase: () => isSupabaseActive,
+    isCloudActive: () => isFirebaseActive,
     getProducts,
     getOrder,
     subscribeOrder,

@@ -1,9 +1,11 @@
-// Supabase Project Configuration
-// يمكنك وضع بيانات مشروعك في Supabase هنا مباشرة أو إدخالها من زر الإعدادات في التطبيق
+// Firebase Project Configuration
+// الصق بيانات مشروعك من Firebase Console هنا أو من خلال زر إعدادات السحابة في التطبيق
 
-window.SUPABASE_CONFIG = {
-  // مثال: 'https://xyzcompany.supabase.co'
-  url: '',
-  // مثال: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
-  key: ''
+window.FIREBASE_CONFIG = {
+  apiKey: "",
+  authDomain: "",
+  projectId: "",
+  storageBucket: "",
+  messagingSenderId: "",
+  appId: ""
 };
