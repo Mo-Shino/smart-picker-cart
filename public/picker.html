@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>شاشة عربة التجميع | Smart Picker Cart</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#04151F">
+  <link rel="stylesheet" href="/css/style.css">
+  
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- Supabase Client for Cloud Realtime -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/config.js"></script>
+  <script src="/js/db.js"></script>
+  <!-- Html5Qrcode Library for Camera Barcode Scanning -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Header -->
+    <header class="top-header">
+      <div class="brand-badge">
+        <a href="/" style="color: var(--wheat); text-decoration: none; display: flex; align-items: center; justify-content: center;">
+          <i data-icon="arrow-right"></i>
+        </a>
+        <div>
+          <h1 class="brand-title" id="cartTitle">عربة التجميع #01</h1>
+          <p class="brand-subtitle" id="pickerAssigned">المُحضّر: أحمد طارق</p>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="status-pill num-font">
+          <i data-icon="battery" style="color: #34D399;"></i>
+          <span>94%</span>
+        </span>
+        <div class="status-pill">
+          <div class="pulse-dot"></div>
+          <span class="num-font" id="orderIdTag">ORD-101</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Progress Bar & Counter -->
+      <div class="card" style="padding: 12px 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">تقدم التجهيز في الممرات</span>
+          <span class="num-font" id="progressText" style="font-weight: 700; color: var(--wheat); font-size: 0.95rem;">0 / 0 صنف (0%)</span>
+        </div>
+        <div class="progress-container">
+          <div class="progress-fill" id="progressBar" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <!-- ACTIVE ITEM HERO CARD (Put-To-Light + Dynamic Route) -->
+      <div id="activeItemSection">
+        <div class="hero-pick-card" id="heroCard">
+          <!-- Floating Aisle & Box Badges -->
+          <div class="aisle-badge-floating">
+            <i data-icon="map-pin"></i>
+            <span id="heroAisle">ممر 1A - رف 01</span>
+          </div>
+          <div class="bin-badge-floating">
+            <i data-icon="box"></i>
+            <span>الصندوق A</span>
+          </div>
+
+          <!-- Product Details -->
+          <div style="margin-top: 36px;">
+            <span class="badge badge-sub" id="heroCategory" style="margin-bottom: 6px;">حبوب وبقوليات</span>
+            <h2 class="item-big-title" id="heroName">أرز مصري فاخر 1 كجم</h2>
+            <div class="item-meta-row">
+              <span>الكمية: <strong class="num-font" id="heroQty" style="color: var(--wheat); font-size: 1.15rem;">1 كيس</strong></span>
+              <span>•</span>
+              <span class="num-font" id="heroPrice" style="color: var(--wheat); font-size: 1.15rem;">32.50 ج.م</span>
+            </div>
+            
+            <!-- Target Barcode Box -->
+            <div style="margin: 10px 0 16px 0;">
+              <div class="barcode-display-tag">
+                <i data-icon="barcode"></i>
+                <span id="heroBarcode" class="num-font">6221001001011</span>
+              </div>
+            </div>
+
+            <!-- Primary Buttons Inside Hero Card -->
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <button id="openScannerBtn" class="btn btn-primary">
+                <i data-icon="scan" class="icon-lg"></i>
+                <span>مسح الباركود بالكاميرا</span>
+              </button>
+              
+              <div style="display: flex; gap: 8px;">
+                <button id="outOfStockBtn" class="btn btn-danger-outline" style="flex: 1; padding: 12px;">
+                  <i data-icon="alert-circle"></i>
+                  <span>غير متوفر / بدائل</span>
+                </button>
+
+                <button id="simulateQuickScanBtn" class="btn btn-secondary" style="flex: 1; padding: 12px; font-size: 0.9rem;">
+                  <i data-icon="check-circle"></i>
+                  <span>محاكاة مسح الصنف</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ALL ITEMS PICKLIST (Ordered by Optimal Aisle Sequence) -->
+      <div>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+          <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-white);">تسلسل مسار الأصناف (Aisle Route)</h3>
+          <span style="font-size: 0.78rem; color: var(--text-accent);">المسار الأقصر تلقائياً</span>
+        </div>
+        <div id="itemsListContainer" style="display: flex; flex-direction: column; gap: 8px;">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <!-- ORDER COMPLETED / MASTER QR SECTION (Initially Hidden) -->
+      <div id="orderCompleteCard" class="card card-highlight" style="display: none; text-align: center; padding: 24px;">
+        <div style="width: 60px; height: 60px; background: rgba(16, 185, 129, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px auto; color: #10B981;">
+          <i data-icon="check-circle" class="icon-xl"></i>
+        </div>
+        <h2 style="font-size: 1.3rem; font-weight: 700; color: #FFFFFF; margin-bottom: 6px;">اكتمل تجهيز الطلب بالكامل!</h2>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+          توجه مباشرة إلى نقطة الكاشير / التسليم دون تفريغ العربة
+        </p>
+
+        <!-- Master Clearance QR Box -->
+        <div class="qr-container">
+          <canvas id="masterQrCanvas" width="200" height="200"></canvas>
+        </div>
+        <div class="num-font" style="font-weight: 700; color: var(--ink-black); background: var(--wheat); padding: 6px 14px; border-radius: var(--radius-sm); display: inline-block; margin-top: 8px;">
+          كود التخليص: <span id="clearanceCodeText">ORD-101</span>
+        </div>
+      </div>
+    </main>
+
+    <!-- SCANNER MODAL (Camera / Viewport) -->
+    <div id="scannerModal" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <i data-icon="scan" style="color: var(--burnt-orange);"></i>
+            <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-white);">قارئ الباركود الذكي</h3>
+          </div>
+          <button id="closeScannerBtn" style="background: none; border: none; color: var(--text-muted); cursor: pointer;">
+            <i data-icon="x" class="icon-lg"></i>
+          </button>
+        </div>
+
+        <!-- Video Camera Viewport -->
+        <div id="scannerViewportBox" class="scanner-viewport">
+          <div id="reader" style="width: 100%; height: 100%;"></div>
+        </div>
+
+        <p style="text-align: center; font-size: 0.82rem; color: var(--text-muted);">
+          وجه كاميرا الهاتف نحو باركود الصنف أو استخدم الماسح الليزري
+        </p>
+
+        <!-- Manual input fallback -->
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="manualBarcodeInput" placeholder="أدخل الباركود يدوياً إذا كان تالفاً" 
+                 class="num-font"
+                 style="flex: 1; padding: 12px; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #FFF; outline: none;">
+          <button id="manualBarcodeSubmit" class="btn btn-secondary" style="width: auto; padding: 12px 16px;">
+            <i data-icon="check-circle"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUBSTITUTION DRAWER (Non-Blocking) -->
+    <div id="subModal" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div>
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-white);">اقتراح بديل ذكي للعميل</h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">لن يتوقف عملك، سيصل إشعار للعميل ومؤقت 3 دقائق</p>
+          </div>
+          <button id="closeSubBtn" style="background: none; border: none; color: var(--text-muted); cursor: pointer;">
+            <i data-icon="x" class="icon-lg"></i>
+          </button>
+        </div>
+
+        <div id="substitutesContainer" style="display: flex; flex-direction: column; gap: 10px;">
+          <!-- Dynamically populated substitutes -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QR Code Generator Library -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <!-- Scripts -->
+  <script src="/js/icons.js"></script>
+  <script src="/js/audio.js"></script>
+  <script src="/js/scanner.js"></script>
+
+  <script>
+    const CART_ID = 'CART-01';
+    let currentOrder = null;
+    let activeItem = null;
+
+    // Load initial order via AppDB (Supabase or Local)
+    async function initOrder() {
+      const order = await AppDB.getOrder('ORD-101');
+      if (order) {
+        currentOrder = order;
+        renderOrderUI();
+      }
+
+      // Subscribe to real-time updates
+      AppDB.subscribeOrder('ORD-101', (updatedOrder) => {
+        if (updatedOrder) {
+          currentOrder = updatedOrder;
+          renderOrderUI();
+        }
+      });
+    }
+    initOrder();
+
+    // Socket.io fallback support
+    if (window.io) {
+      window.socket = io();
+      window.socket.emit('cart_identify', CART_ID);
+
+      window.socket.on('cart_synced', (data) => {
+        if (data.activeOrder && !AppDB.isSupabase()) {
+          currentOrder = data.activeOrder;
+          renderOrderUI();
+        }
+      });
+
+      window.socket.on('order_updated', (updatedOrder) => {
+        if (!AppDB.isSupabase() && currentOrder && currentOrder.id === updatedOrder.id) {
+          currentOrder = updatedOrder;
+          renderOrderUI();
+        }
+      });
+
+      window.socket.on('substitution_resolved', ({ subRequestId, decision, order }) => {
+        currentOrder = order;
+        renderOrderUI();
+        AudioFeedback.alert();
+        alert(decision === 'accepted' ? 'وافق العميل على البديل وسيتم تحديث المسار!' : 'رفض العميل البديل وتم إلغاء الصنف.');
+      });
+
+      window.socket.on('scan_result', (res) => {
+        if (res.success) {
+          AudioFeedback.success();
+          closeScanner();
+        } else {
+          AudioFeedback.warning();
+          alert(res.message);
+        }
+      });
+    }
+
+    // Render Full Order State
+    function renderOrderUI() {
+      if (!currentOrder) return;
+
+      document.getElementById('orderIdTag').innerText = currentOrder.id;
+      document.getElementById('clearanceCodeText').innerText = currentOrder.id;
+
+      const items = currentOrder.items || [];
+      const pickedCount = items.filter(i => i.status === 'picked' || i.status === 'substituted').length;
+      const totalCount = items.length;
+      const pct = totalCount > 0 ? Math.round((pickedCount / totalCount) * 100) : 0;
+
+      document.getElementById('progressText').innerText = `${pickedCount} / ${totalCount} صنف (${pct}%)`;
+      document.getElementById('progressBar').style.width = `${pct}%`;
+
+      // Find first pending item according to optimal aisle sequence
+      activeItem = items.find(i => i.status === 'pending');
+
+      if (!activeItem && totalCount > 0) {
+        // All items picked!
+        document.getElementById('activeItemSection').style.display = 'none';
+        document.getElementById('orderCompleteCard').style.display = 'block';
+        AudioFeedback.complete();
+
+        // Generate Master QR Code
+        const canvas = document.getElementById('masterQrCanvas');
+        if (window.QRCode && canvas) {
+          QRCode.toCanvas(canvas, JSON.stringify({
+            orderId: currentOrder.id,
+            cartId: CART_ID,
+            totalAmount: currentOrder.totalAmount,
+            timestamp: Date.now()
+          }), { width: 190, margin: 1 });
+        }
+      } else if (activeItem) {
+        document.getElementById('activeItemSection').style.display = 'block';
+        document.getElementById('orderCompleteCard').style.display = 'none';
+
+        // Update Hero Card
+        document.getElementById('heroName').innerText = activeItem.name;
+        document.getElementById('heroAisle').innerText = activeItem.aisle;
+        document.getElementById('heroCategory').innerText = activeItem.category || 'عام';
+        document.getElementById('heroQty').innerText = `${activeItem.requiredQty} ${activeItem.unit || 'قطعة'}`;
+        document.getElementById('heroPrice').innerText = `${activeItem.price.toFixed(2)} ج.م`;
+        document.getElementById('heroBarcode').innerText = activeItem.barcode;
+      }
+
+      // Render items sequence list
+      const listContainer = document.getElementById('itemsListContainer');
+      listContainer.innerHTML = '';
+      items.forEach((item) => {
+        const isCurrent = activeItem && activeItem.id === item.id;
+        const isPicked = item.status === 'picked';
+        const isOut = item.status === 'out_of_stock';
+
+        let badgeHtml = `<span class="badge badge-pending">في الانتظار</span>`;
+        let borderStyle = '1px solid var(--border-subtle)';
+
+        if (isPicked) {
+          badgeHtml = `<span class="badge badge-picked"><i data-icon="check-circle"></i> تم التجميع</span>`;
+          borderStyle = '1px solid rgba(16, 185, 129, 0.3)';
+        } else if (isCurrent) {
+          badgeHtml = `<span class="badge" style="background: var(--burnt-orange); color: #FFF;">الصنف الحالي</span>`;
+          borderStyle = '2px solid var(--burnt-orange)';
+        } else if (isOut) {
+          badgeHtml = `<span class="badge badge-sub"><i data-icon="refresh"></i> بانتظار البديل</span>`;
+        }
+
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.style.padding = '12px 14px';
+        div.style.border = borderStyle;
+        div.innerHTML = `
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <div style="font-size: 0.8rem; color: var(--wheat); margin-bottom: 2px;">
+                ${item.aisle}
+              </div>
+              <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-white);">
+                ${item.name}
+              </div>
+            </div>
+            <div style="text-align: left;">
+              ${badgeHtml}
+              <div class="num-font" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
+                ${item.requiredQty} ${item.unit || 'قطعة'}
+              </div>
+            </div>
+          </div>
+        `;
+        listContainer.appendChild(div);
+      });
+
+      renderAllIcons(document);
+    }
+
+    // Handle Barcode Scan Event via AppDB
+    async function processBarcodeScan(barcode) {
+      if (!currentOrder) return;
+      const res = await AppDB.scanItem(currentOrder.id, barcode.trim());
+      if (res && res.success) {
+        AudioFeedback.success();
+        closeScanner();
+        if (res.order) {
+          currentOrder = res.order;
+          renderOrderUI();
+        }
+      } else if (res && !res.pendingSocket) {
+        AudioFeedback.warning();
+        alert(res.message || 'الباركود غير مطابق!');
+      }
+    }
+
+    // Initialize Hardware Scanner (USB/Bluetooth Guns)
+    BarcodeScanner.initHardware((code) => {
+      processBarcodeScan(code);
+    });
+
+    // Scanner Modal UI
+    const scannerModal = document.getElementById('scannerModal');
+    const openScannerBtn = document.getElementById('openScannerBtn');
+    const closeScannerBtn = document.getElementById('closeScannerBtn');
+
+    openScannerBtn.addEventListener('click', () => {
+      scannerModal.classList.add('active');
+      BarcodeScanner.startCamera('reader', (code) => {
+        processBarcodeScan(code);
+      });
+    });
+
+    function closeScanner() {
+      scannerModal.classList.remove('active');
+      BarcodeScanner.stopCamera();
+    }
+    closeScannerBtn.addEventListener('click', closeScanner);
+
+    // Simulate Quick Scan
+    document.getElementById('simulateQuickScanBtn').addEventListener('click', () => {
+      if (activeItem) {
+        processBarcodeScan(activeItem.barcode);
+      }
+    });
+
+    // Manual Barcode Input
+    document.getElementById('manualBarcodeSubmit').addEventListener('click', () => {
+      const val = document.getElementById('manualBarcodeInput').value;
+      if (val) {
+        processBarcodeScan(val);
+        document.getElementById('manualBarcodeInput').value = '';
+      }
+    });
+
+    // Out of Stock & Substitution Handling
+    const subModal = document.getElementById('subModal');
+    const outOfStockBtn = document.getElementById('outOfStockBtn');
+    const closeSubBtn = document.getElementById('closeSubBtn');
+
+    outOfStockBtn.addEventListener('click', async () => {
+      if (!activeItem) return;
+      subModal.classList.add('active');
+      
+      const allProducts = await AppDB.getProducts();
+      const subs = allProducts.filter(p => p.category === activeItem.category && p.id !== activeItem.productId);
+      const container = document.getElementById('substitutesContainer');
+      container.innerHTML = '';
+
+      if (subs.length === 0) {
+        container.innerHTML = `<p style="color: var(--text-muted); text-align: center;">لا توجد بدائل متاحة لهذا الصنف في نفس القسم.</p>`;
+        return;
+      }
+
+      subs.slice(0, 3).forEach(sub => {
+        const btn = document.createElement('div');
+        btn.className = 'card';
+        btn.style.cursor = 'pointer';
+        btn.style.borderColor = 'rgba(239, 214, 172, 0.25)';
+        btn.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-weight: 700; color: #FFF; font-size: 0.95rem;">${sub.name}</div>
+              <div style="font-size: 0.8rem; color: var(--wheat);">${sub.aisle}</div>
+            </div>
+            <div style="text-align: left;">
+              <div class="num-font" style="font-weight: 700; color: var(--wheat);">${sub.price.toFixed(2)} ج.م</div>
+              <span class="badge" style="background: var(--burnt-orange); color: #FFF; margin-top: 4px;">اقتراح هذا البديل</span>
+            </div>
+          </div>
+        `;
+        btn.addEventListener('click', async () => {
+          await AppDB.requestSubstitution(currentOrder.id, activeItem.id, sub);
+          subModal.classList.remove('active');
+          AudioFeedback.alert();
+          alert(`تم إرسال اقتراح (${sub.name}) للعميل بمؤقت 3 دقائق. يمكنك متابعة تجميع الأصناف الأخرى دون توقف.`);
+        });
+        container.appendChild(btn);
+      });
+    });
+
+    closeSubBtn.addEventListener('click', () => {
+      subModal.classList.remove('active');
+    });
+  </script>
+</body>
+</html>

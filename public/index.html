@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>العربة الذكية | Smart Picker Cart</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#04151F">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="عربة التجميع">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="stylesheet" href="/css/style.css">
+  
+  <!-- Supabase JS Client for Cloud & Vercel Realtime -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/config.js"></script>
+  <script src="/js/db.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Header -->
+    <header class="top-header">
+      <div class="brand-badge">
+        <div class="brand-logo-icon">
+          <i data-icon="cart"></i>
+        </div>
+        <div>
+          <h1 class="brand-title">العربة الذكية</h1>
+          <p class="brand-subtitle">Smart Picker System</p>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <button id="openConfigBtn" style="background: rgba(239, 214, 172, 0.1); border: 1px solid var(--border-subtle); color: var(--wheat); padding: 6px 10px; border-radius: var(--radius-sm); cursor: pointer; display: flex; align-items: center; gap: 4px; font-size: 0.75rem;">
+          <i data-icon="sparkles"></i>
+          <span id="cloudStatusLabel">السحابة</span>
+        </button>
+        <div class="status-pill">
+          <div class="pulse-dot"></div>
+          <span id="connectionBadge">نشط</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- PWA Install Banner -->
+      <div id="pwaBanner" class="pwa-install-banner" style="display: none;">
+        <div>
+          <div class="pwa-text" style="font-weight: 700; color: var(--wheat); margin-bottom: 2px;">تثبيت كتطبيق موبايل</div>
+          <div class="pwa-text" style="font-size: 0.78rem; color: var(--text-muted);">شاشة كاملة وتجربة تطبيق أصلي بدون متصفح</div>
+        </div>
+        <button id="pwaInstallBtn" class="btn-install">
+          تثبيت الآن
+        </button>
+      </div>
+
+      <!-- Cloud / Vercel Readiness Card -->
+      <div class="card card-highlight">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <i data-icon="sparkles" style="color: var(--burnt-orange);"></i>
+            <span style="font-weight: 700; font-size: 0.95rem;">جاهز للرفع على Vercel و Supabase</span>
+          </div>
+          <span id="activeModeBadge" class="badge badge-picked num-font">VERCEL READY</span>
+        </div>
+        <p style="font-size: 0.84rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px;">
+          المشروع مهيأ بالكامل بملف <code style="color: var(--wheat); background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 4px;">vercel.json</code> ومكتبة البث المباشر <code style="color: var(--wheat); background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 4px;">Supabase Realtime</code>.
+        </p>
+        <div style="display: flex; gap: 8px;">
+          <button id="setupSupabaseBtn" class="btn btn-secondary" style="flex: 1; padding: 10px; font-size: 0.85rem;">
+            <i data-icon="shield-check"></i>
+            <span>ربط سحابة Supabase</span>
+          </button>
+          <a href="#wifiInfo" id="toggleWifiBtn" class="btn btn-secondary" style="flex: 1; padding: 10px; font-size: 0.85rem; text-decoration: none;">
+            <i data-icon="wifi"></i>
+            <span>عنوان الواي فاي المحلي</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Wi-Fi Network Box (Collapsible/Visible) -->
+      <div id="wifiBoxContainer" class="card" style="display: none; padding: 14px; background: rgba(0,0,0,0.3);">
+        <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 8px;">
+          للتشغيل المحلي عبر شبكة الواي فاي المنزلية قبل الرفع السحابي:
+        </p>
+        <div id="networkIpBox" class="barcode-display-tag num-font" style="width: 100%; justify-content: center; font-size: 1rem; padding: 8px; background: rgba(0,0,0,0.5);">
+          http://localhost:3000
+        </div>
+      </div>
+
+      <!-- Roles Selection Header -->
+      <div style="margin-top: 4px;">
+        <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--text-white); margin-bottom: 4px;">اختر واجهة الاستخدام</h2>
+        <p style="font-size: 0.82rem; color: var(--text-muted);">جميع الشاشات مرتبطة معاً في الوقت الفعلي</p>
+      </div>
+
+      <!-- Role 1: Picker Cart Station -->
+      <div class="card" style="border-right: 4px solid var(--burnt-orange);">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+              <span class="badge" style="background: rgba(196, 73, 0, 0.2); color: var(--burnt-orange); border: 1px solid var(--border-highlight);">
+                محطة العمل المتنقلة
+              </span>
+            </div>
+            <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--text-white);">عربة التجميع الذكية</h3>
+          </div>
+          <div style="width: 44px; height: 44px; border-radius: var(--radius-sm); background: rgba(196, 73, 0, 0.15); display: flex; align-items: center; justify-content: center; color: var(--burnt-orange);">
+            <i data-icon="scan" class="icon-lg"></i>
+          </div>
+        </div>
+        
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;">
+          <span class="badge badge-sub"><i data-icon="barcode"></i> مسح باركود فوري</span>
+          <span class="badge badge-sub"><i data-icon="map-pin"></i> المسار الأقصر</span>
+          <span class="badge badge-sub"><i data-icon="refresh"></i> بدائل غير معطلة</span>
+        </div>
+
+        <a href="/picker.html" class="btn btn-primary" style="text-decoration: none;">
+          <i data-icon="cart"></i>
+          <span>فتح شاشة العربة</span>
+        </a>
+      </div>
+
+      <!-- Role 2: Customer Live Tracking -->
+      <div class="card" style="border-right: 4px solid #3B82F6;">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+              <span class="badge" style="background: rgba(59, 130, 246, 0.2); color: #60A5FA; border: 1px solid rgba(59, 130, 246, 0.3);">
+                تطبيق العميل
+              </span>
+            </div>
+            <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--text-white);">متابعة وتجهيز الطلب</h3>
+          </div>
+          <div style="width: 44px; height: 44px; border-radius: var(--radius-sm); background: rgba(59, 130, 246, 0.15); display: flex; align-items: center; justify-content: center; color: #60A5FA;">
+            <i data-icon="smartphone" class="icon-lg"></i>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;">
+          <span class="badge badge-sub"><i data-icon="clock"></i> تتبع مباشر لحظياً</span>
+          <span class="badge badge-sub"><i data-icon="shield-check"></i> اعتماد البدائل</span>
+          <span class="badge badge-sub"><i data-icon="receipt"></i> فاتورة إلكترونية</span>
+        </div>
+
+        <a href="/customer.html" class="btn btn-secondary" style="text-decoration: none; border-color: rgba(59, 130, 246, 0.4);">
+          <i data-icon="smartphone"></i>
+          <span>فتح تطبيق العميل</span>
+        </a>
+      </div>
+
+      <!-- Role 3: Cashier Fast Pass Station -->
+      <div class="card" style="border-right: 4px solid var(--wheat);">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+              <span class="badge" style="background: rgba(239, 214, 172, 0.2); color: var(--wheat); border: 1px solid var(--border-subtle);">
+                نقطة الخروج السريع
+              </span>
+            </div>
+            <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--text-white);">الكاشير والتسليم</h3>
+          </div>
+          <div style="width: 44px; height: 44px; border-radius: var(--radius-sm); background: rgba(239, 214, 172, 0.15); display: flex; align-items: center; justify-content: center; color: var(--wheat);">
+            <i data-icon="qrcode" class="icon-lg"></i>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;">
+          <span class="badge badge-sub"><i data-icon="qrcode"></i> مسح Master QR</span>
+          <span class="badge badge-sub"><i data-icon="check-circle"></i> تجاوز الطابور</span>
+        </div>
+
+        <a href="/cashier.html" class="btn btn-secondary" style="text-decoration: none;">
+          <i data-icon="qrcode"></i>
+          <span>فتح محطة الكاشير</span>
+        </a>
+      </div>
+    </main>
+
+    <!-- SUPABASE CONFIGURATION MODAL -->
+    <div id="configModal" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <i data-icon="sparkles" style="color: var(--burnt-orange);"></i>
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-white);">إعدادات سحابة Supabase</h3>
+          </div>
+          <button id="closeConfigBtn" style="background: none; border: none; color: var(--text-muted); cursor: pointer;">
+            <i data-icon="x" class="icon-lg"></i>
+          </button>
+        </div>
+
+        <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+          عند رفع المشروع على Vercel، الصق هنا رابط مشروعك ومفتاح الـ Anon Key من لوحة تحكم Supabase لتفعيل المزامنة السحابية الحية:
+        </p>
+
+        <div>
+          <label style="font-size: 0.8rem; color: var(--wheat); font-weight: 600; display: block; margin-bottom: 4px;">Project URL:</label>
+          <input type="text" id="supabaseUrlInput" placeholder="https://xyzcompany.supabase.co" class="num-font"
+                 style="width: 100%; padding: 12px; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #FFF; outline: none; font-size: 0.9rem;">
+        </div>
+
+        <div>
+          <label style="font-size: 0.8rem; color: var(--wheat); font-weight: 600; display: block; margin-bottom: 4px;">Anon Public Key:</label>
+          <input type="text" id="supabaseKeyInput" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." class="num-font"
+                 style="width: 100%; padding: 12px; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #FFF; outline: none; font-size: 0.9rem;">
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-top: 6px;">
+          <button id="saveSupabaseBtn" class="btn btn-primary" style="flex: 2; padding: 12px;">
+            <i data-icon="check-circle"></i>
+            <span>حفظ والاتصال بالسحابة</span>
+          </button>
+          <button id="clearSupabaseBtn" class="btn btn-danger-outline" style="flex: 1; padding: 12px; font-size: 0.85rem;">
+            <span>استخدام المحلي</span>
+          </button>
+        </div>
+
+        <div style="background: rgba(0,0,0,0.3); border-radius: var(--radius-sm); padding: 10px; font-size: 0.78rem; color: var(--text-muted);">
+          ملف إنشاء الجداول جاهز لك بالكامل في: <strong style="color: var(--wheat);">supabase_schema.sql</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/js/icons.js"></script>
+  <script>
+    // Supabase Cloud Configuration Modal Controller
+    const configModal = document.getElementById('configModal');
+    const openConfigBtn = document.getElementById('openConfigBtn');
+    const closeConfigBtn = document.getElementById('closeConfigBtn');
+    const setupSupabaseBtn = document.getElementById('setupSupabaseBtn');
+    const saveSupabaseBtn = document.getElementById('saveSupabaseBtn');
+    const clearSupabaseBtn = document.getElementById('clearSupabaseBtn');
+    const urlInput = document.getElementById('supabaseUrlInput');
+    const keyInput = document.getElementById('supabaseKeyInput');
+    const cloudStatusLabel = document.getElementById('cloudStatusLabel');
+
+    // Populate existing
+    urlInput.value = localStorage.getItem('SP_SUPABASE_URL') || '';
+    keyInput.value = localStorage.getItem('SP_SUPABASE_KEY') || '';
+
+    if (AppDB.isSupabase()) {
+      cloudStatusLabel.innerText = 'Supabase متصل';
+      cloudStatusLabel.style.color = '#34D399';
+      document.getElementById('activeModeBadge').innerText = 'SUPABASE CLOUD';
+    } else {
+      cloudStatusLabel.innerText = 'محلي / Local';
+    }
+
+    const openModal = () => configModal.classList.add('active');
+    const closeModal = () => configModal.classList.remove('active');
+
+    openConfigBtn.addEventListener('click', openModal);
+    setupSupabaseBtn.addEventListener('click', openModal);
+    closeConfigBtn.addEventListener('click', closeModal);
+
+    saveSupabaseBtn.addEventListener('click', () => {
+      const url = urlInput.value.trim();
+      const key = keyInput.value.trim();
+      if (!url || !key) {
+        alert('يرجى إدخال الرابط والمفتاح معاً.');
+        return;
+      }
+      localStorage.setItem('SP_SUPABASE_URL', url);
+      localStorage.setItem('SP_SUPABASE_KEY', key);
+      alert('تم حفظ إعدادات Supabase بنجاح! سيتم إعادة تحميل الصفحة للتفعيل.');
+      window.location.reload();
+    });
+
+    clearSupabaseBtn.addEventListener('click', () => {
+      localStorage.removeItem('SP_SUPABASE_URL');
+      localStorage.removeItem('SP_SUPABASE_KEY');
+      alert('تم الرجوع للوضع المحلي.');
+      window.location.reload();
+    });
+
+    // Toggle Wi-Fi Info
+    const toggleWifiBtn = document.getElementById('toggleWifiBtn');
+    const wifiBox = document.getElementById('wifiBoxContainer');
+    toggleWifiBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      wifiBox.style.display = wifiBox.style.display === 'none' ? 'block' : 'none';
+    });
+
+    // Fetch Server Network IPs
+    fetch('/api/info')
+      .then(res => res.json())
+      .then(data => {
+        const ipBox = document.getElementById('networkIpBox');
+        if (data.localIps && data.localIps.length > 0) {
+          ipBox.innerHTML = `http://${data.localIps[0]}:${data.port}`;
+        } else {
+          ipBox.innerHTML = `http://localhost:${data.port}`;
+        }
+      })
+      .catch(() => {
+        document.getElementById('networkIpBox').innerHTML = window.location.origin;
+      });
+
+    // PWA Service Worker Registration & Installation Prompt
+    let deferredPrompt = null;
+    const pwaBanner = document.getElementById('pwaBanner');
+    const pwaInstallBtn = document.getElementById('pwaInstallBtn');
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW reg error:', err));
+      });
+    }
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      if (pwaBanner) pwaBanner.style.display = 'flex';
+    });
+
+    if (pwaInstallBtn) {
+      pwaInstallBtn.addEventListener('click', async () => {
+        if (!deferredPrompt) {
+          alert('لتثبيت التطبيق على آيفون:\nاضغط زر المشاركة (Share) في Safari ثم اختر "إضافة إلى الشاشة الرئيسية (Add to Home Screen)".');
+          return;
+        }
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          pwaBanner.style.display = 'none';
+        }
+        deferredPrompt = null;
+      });
+    }
+  </script>
+</body>
+</html>

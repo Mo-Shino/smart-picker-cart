@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>تطبيق العميل | Smart Picker</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#04151F">
+  <link rel="stylesheet" href="/css/style.css">
+  
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- Supabase Client for Cloud Realtime -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/config.js"></script>
+  <script src="/js/db.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Header -->
+    <header class="top-header">
+      <div class="brand-badge">
+        <a href="/" style="color: var(--wheat); text-decoration: none; display: flex; align-items: center; justify-content: center;">
+          <i data-icon="arrow-right"></i>
+        </a>
+        <div>
+          <h1 class="brand-title">هايبر ماركت الذكي</h1>
+          <p class="brand-subtitle">خدمة التجهيز السريع</p>
+        </div>
+      </div>
+      <div class="status-pill">
+        <div class="pulse-dot"></div>
+        <span id="customerStatusTag">تتبع مباشر</span>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs (Catalog vs Live Tracking) -->
+    <div style="display: flex; background: var(--bg-secondary); border-bottom: 1px solid var(--border-subtle); padding: 6px 12px; gap: 8px;">
+      <button id="tabTrackBtn" class="btn btn-secondary" style="flex: 1; padding: 10px; font-size: 0.9rem; border-color: var(--burnt-orange); color: var(--text-white); background: rgba(196, 73, 0, 0.15);">
+        <i data-icon="clock"></i>
+        <span>متابعة الطلب الحية</span>
+      </button>
+      <button id="tabShopBtn" class="btn btn-secondary" style="flex: 1; padding: 10px; font-size: 0.9rem;">
+        <i data-icon="cart"></i>
+        <span>تسوق منتجات جديدة</span>
+      </button>
+    </div>
+
+    <!-- MAIN VIEW 1: LIVE ORDER TRACKING -->
+    <main id="trackingView" class="main-content">
+      <!-- Live Order Header Card -->
+      <div class="card card-highlight">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+              <span class="badge badge-picked num-font" id="liveOrderId">ORD-101</span>
+              <span class="badge badge-sub" id="assignedCartBadge">عربة #01</span>
+            </div>
+            <h2 style="font-size: 1.15rem; font-weight: 700; color: #FFF;" id="orderStageTitle">جاري تجميع طلبك الآن في المتجر</h2>
+          </div>
+          <div style="text-align: left;">
+            <div class="num-font" id="orderTotalText" style="font-size: 1.25rem; font-weight: 700; color: var(--wheat);">185.00 ج.م</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">الإجمالي التقديري</div>
+          </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div style="margin-top: 10px;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">
+            <span>المنتجات التي وُضعت في العربة</span>
+            <span class="num-font" id="liveProgressPercent" style="color: var(--wheat); font-weight: 700;">0%</span>
+          </div>
+          <div class="progress-container">
+            <div class="progress-fill" id="liveProgressBar" style="width: 0%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LIVE SUBSTITUTION ALERT BANNER (If picker requests a substitute) -->
+      <div id="subAlertBanner" class="card card-violet" style="display: none; border: 2px solid var(--wheat); box-shadow: 0 0 20px rgba(239, 214, 172, 0.25);">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <i data-icon="refresh" style="color: var(--wheat);"></i>
+            <span style="font-weight: 700; color: var(--text-white); font-size: 0.95rem;">اقتراح بديل ذكي لصنف غير متوفر</span>
+          </div>
+          <span class="badge" style="background: var(--burnt-orange); color: #FFF; font-family: var(--font-num);" id="subTimer">03:00</span>
+        </div>
+
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+          صنف <strong id="subOriginalName" style="color: #FFF;">...</strong> غير متوفر في الرف. اقترح المُحضّر البديل التالي:
+        </p>
+
+        <!-- Substitute Details -->
+        <div class="card" style="background: rgba(0,0,0,0.3); margin-bottom: 14px; padding: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-weight: 700; color: var(--wheat); font-size: 1rem;" id="subNewName">...</div>
+              <div style="font-size: 0.8rem; color: var(--text-muted);">نفس الفئة والجودة</div>
+            </div>
+            <div class="num-font" style="font-weight: 700; color: #FFF; font-size: 1.1rem;" id="subNewPrice">... ج.م</div>
+          </div>
+        </div>
+
+        <!-- Substitution Action Buttons -->
+        <div style="display: flex; gap: 10px;">
+          <button id="acceptSubBtn" class="btn btn-primary" style="flex: 2; padding: 12px;">
+            <i data-icon="check-circle"></i>
+            <span>قبول واختيار البديل</span>
+          </button>
+          <button id="rejectSubBtn" class="btn btn-danger-outline" style="flex: 1; padding: 12px;">
+            <i data-icon="x"></i>
+            <span>إلغاء الصنف</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Items Breakdown -->
+      <div>
+        <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-white); margin-bottom: 10px;">حالة كل صنف في طلبك</h3>
+        <div id="customerItemsList" style="display: flex; flex-direction: column; gap: 8px;">
+          <!-- Items will be rendered here -->
+        </div>
+      </div>
+    </main>
+
+    <!-- MAIN VIEW 2: SHOP CATALOG (To create new orders) -->
+    <main id="shopView" class="main-content" style="display: none;">
+      <div class="card card-highlight">
+        <h3 style="font-size: 1.1rem; font-weight: 700; color: #FFF; margin-bottom: 4px;">تسوق طلب جديد</h3>
+        <p style="font-size: 0.82rem; color: var(--text-muted);">اختر المنتجات ليتم إرسالها فوراً إلى شاشة أقرب عربة ذكية</p>
+      </div>
+
+      <!-- Products Grid -->
+      <div id="catalogList" style="display: flex; flex-direction: column; gap: 10px;">
+        <!-- Populated dynamically -->
+      </div>
+    </main>
+
+    <!-- Bottom Checkout Bar (Active in Shop View) -->
+    <div id="shopBottomBar" class="bottom-dock" style="display: none; align-items: center; justify-content: space-between;">
+      <div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">السلة الحالية: <span id="cartCount" class="num-font" style="color: var(--wheat); font-weight: 700;">0</span> أصناف</div>
+        <div class="num-font" id="cartTotal" style="font-size: 1.25rem; font-weight: 700; color: var(--wheat);">0.00 ج.م</div>
+      </div>
+      <button id="submitOrderBtn" class="btn btn-primary" style="width: auto; padding: 12px 24px;">
+        <i data-icon="cart"></i>
+        <span>إرسال للعربة الذكية</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/js/icons.js"></script>
+  <script src="/js/audio.js"></script>
+  <script>
+    let currentOrderId = 'ORD-101';
+    let currentOrder = null;
+    let localCart = [];
+    let subCountdownInterval = null;
+
+    // Load initial Order via AppDB
+    async function initCustomerOrder() {
+      const order = await AppDB.getOrder(currentOrderId);
+      if (order) {
+        currentOrder = order;
+        renderLiveTracking();
+      }
+
+      AppDB.subscribeOrder(currentOrderId, (updatedOrder) => {
+        if (updatedOrder) {
+          currentOrder = updatedOrder;
+          renderLiveTracking();
+          AudioFeedback.success();
+        }
+      });
+    }
+    initCustomerOrder();
+
+    // Socket.io fallback support
+    if (window.io) {
+      window.socket = io();
+      window.socket.emit('customer_join', currentOrderId);
+
+      window.socket.on('order_synced', (order) => {
+        if (!AppDB.isSupabase()) {
+          currentOrder = order;
+          renderLiveTracking();
+        }
+      });
+
+      window.socket.on('order_updated', (order) => {
+        if (!AppDB.isSupabase() && currentOrder && currentOrder.id === order.id) {
+          currentOrder = order;
+          renderLiveTracking();
+          AudioFeedback.success();
+        }
+      });
+
+      window.socket.on('order_completed', (order) => {
+        currentOrder = order;
+        renderLiveTracking();
+        AudioFeedback.complete();
+        alert('تهانينا! تم اكتمال تجهيز طلبك واعتماده عند الكاشير بنجاح وهو جاهز للاستلام.');
+      });
+
+      window.socket.on('substitution_alert', ({ orderId, subRequest, order }) => {
+        if (currentOrderId !== orderId) return;
+        currentOrder = order;
+        renderLiveTracking();
+        AudioFeedback.alert();
+        showSubstitutionBanner(subRequest);
+      });
+    }
+
+    // Render Live Tracking Screen
+    function renderLiveTracking() {
+      if (!currentOrder) return;
+
+      document.getElementById('liveOrderId').innerText = currentOrder.id;
+      document.getElementById('assignedCartBadge').innerText = currentOrder.cartId || 'عربة #01';
+      document.getElementById('orderTotalText').innerText = `${currentOrder.totalAmount.toFixed(2)} ج.م`;
+
+      const items = currentOrder.items || [];
+      const pickedCount = items.filter(i => i.status === 'picked' || i.status === 'substituted').length;
+      const totalCount = items.length;
+      const pct = totalCount > 0 ? Math.round((pickedCount / totalCount) * 100) : 0;
+
+      document.getElementById('liveProgressPercent').innerText = `${pickedCount}/${totalCount} (${pct}%)`;
+      document.getElementById('liveProgressBar').style.width = `${pct}%`;
+
+      if (currentOrder.status === 'completed') {
+        document.getElementById('orderStageTitle').innerText = 'تم التجهيز واعتماد الفاتورة عند الكاشير';
+      } else if (currentOrder.status === 'ready_for_dispatch') {
+        document.getElementById('orderStageTitle').innerText = 'العربة متجهة لنقطة الكاشير للتسليم السريع';
+      } else {
+        document.getElementById('orderStageTitle').innerText = 'المُحضّر يقوم بتجميع طلبك الآن في الممرات';
+      }
+
+      // Check for active pending substitutions
+      const activeSub = (currentOrder.substitutionRequests || []).find(s => s.status === 'pending');
+      if (activeSub) {
+        showSubstitutionBanner(activeSub);
+      } else {
+        document.getElementById('subAlertBanner').style.display = 'none';
+        if (subCountdownInterval) clearInterval(subCountdownInterval);
+      }
+
+      // Render Item List
+      const container = document.getElementById('customerItemsList');
+      container.innerHTML = '';
+
+      items.forEach(item => {
+        let statusBadge = `<span class="badge badge-pending"><i data-icon="clock"></i> في الانتظار</span>`;
+        let border = '1px solid var(--border-subtle)';
+
+        if (item.status === 'picked') {
+          statusBadge = `<span class="badge badge-picked"><i data-icon="check-circle"></i> تم الوضع بالعربة</span>`;
+          border = '1px solid rgba(16, 185, 129, 0.3)';
+        } else if (item.status === 'out_of_stock') {
+          statusBadge = `<span class="badge badge-sub"><i data-icon="refresh"></i> بديل مقترح</span>`;
+          border = '1px solid var(--wheat)';
+        } else if (item.status === 'cancelled') {
+          statusBadge = `<span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #EF4444;"><i data-icon="x"></i> ملغي</span>`;
+        }
+
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.style.padding = '12px 14px';
+        card.style.border = border;
+        card.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-weight: 700; font-size: 0.95rem; color: #FFF;">${item.name}</div>
+              <div style="font-size: 0.8rem; color: var(--text-muted);">${item.category || 'عام'} • ${item.requiredQty} ${item.unit || 'قطعة'}</div>
+            </div>
+            <div style="text-align: left;">
+              ${statusBadge}
+              <div class="num-font" style="font-size: 0.85rem; color: var(--wheat); font-weight: 700; margin-top: 4px;">
+                ${(item.price * item.requiredQty).toFixed(2)} ج.م
+              </div>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      renderAllIcons(document);
+    }
+
+    // Substitution Banner Controller
+    function showSubstitutionBanner(sub) {
+      const banner = document.getElementById('subAlertBanner');
+      banner.style.display = 'block';
+      document.getElementById('subOriginalName').innerText = sub.originalItemName;
+      document.getElementById('subNewName').innerText = sub.substituteProduct.name;
+      document.getElementById('subNewPrice').innerText = `${sub.substituteProduct.price.toFixed(2)} ج.م`;
+
+      // Setup 3-min Timer Countdown
+      if (subCountdownInterval) clearInterval(subCountdownInterval);
+      const updateTimer = () => {
+        const remainingMs = Math.max(0, (sub.expiresAt || (Date.now() + 180000)) - Date.now());
+        const totalSecs = Math.floor(remainingMs / 1000);
+        const mins = String(Math.floor(totalSecs / 60)).padStart(2, '0');
+        const secs = String(totalSecs % 60).padStart(2, '0');
+        document.getElementById('subTimer').innerText = `${mins}:${secs}`;
+        if (remainingMs <= 0) {
+          clearInterval(subCountdownInterval);
+        }
+      };
+      updateTimer();
+      subCountdownInterval = setInterval(updateTimer, 1000);
+
+      // Buttons Action via AppDB
+      document.getElementById('acceptSubBtn').onclick = async () => {
+        await AppDB.respondSubstitution(currentOrder.id, sub.id, 'accepted');
+        banner.style.display = 'none';
+        clearInterval(subCountdownInterval);
+      };
+
+      document.getElementById('rejectSubBtn').onclick = async () => {
+        await AppDB.respondSubstitution(currentOrder.id, sub.id, 'rejected');
+        banner.style.display = 'none';
+        clearInterval(subCountdownInterval);
+      };
+    }
+
+    // Tabs Switching
+    const tabTrackBtn = document.getElementById('tabTrackBtn');
+    const tabShopBtn = document.getElementById('tabShopBtn');
+    const trackingView = document.getElementById('trackingView');
+    const shopView = document.getElementById('shopView');
+    const shopBottomBar = document.getElementById('shopBottomBar');
+
+    tabTrackBtn.addEventListener('click', () => {
+      tabTrackBtn.style.borderColor = 'var(--burnt-orange)';
+      tabTrackBtn.style.color = '#FFF';
+      tabTrackBtn.style.background = 'rgba(196, 73, 0, 0.15)';
+      tabShopBtn.style.borderColor = 'var(--border-subtle)';
+      tabShopBtn.style.color = 'var(--text-accent)';
+      tabShopBtn.style.background = 'var(--surface-elevated)';
+      trackingView.style.display = 'flex';
+      shopView.style.display = 'none';
+      shopBottomBar.style.display = 'none';
+    });
+
+    tabShopBtn.addEventListener('click', () => {
+      tabShopBtn.style.borderColor = 'var(--burnt-orange)';
+      tabShopBtn.style.color = '#FFF';
+      tabShopBtn.style.background = 'rgba(196, 73, 0, 0.15)';
+      tabTrackBtn.style.borderColor = 'var(--border-subtle)';
+      tabTrackBtn.style.color = 'var(--text-accent)';
+      tabTrackBtn.style.background = 'var(--surface-elevated)';
+      trackingView.style.display = 'none';
+      shopView.style.display = 'flex';
+      shopBottomBar.style.display = 'flex';
+      loadShopCatalog();
+    });
+
+    // Load Catalog for new shopping
+    async function loadShopCatalog() {
+      const products = await AppDB.getProducts();
+      const list = document.getElementById('catalogList');
+      list.innerHTML = '';
+      products.forEach(p => {
+        const itemCard = document.createElement('div');
+        itemCard.className = 'card';
+        itemCard.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-size: 0.8rem; color: var(--wheat);">${p.aisle}</div>
+              <div style="font-weight: 700; color: #FFF; font-size: 1rem;">${p.name}</div>
+              <div class="num-font" style="font-weight: 700; color: var(--wheat); margin-top: 4px;">${p.price.toFixed(2)} ج.م</div>
+            </div>
+            <div>
+              <button class="btn btn-primary add-to-cart-btn" style="width: auto; padding: 10px 16px; font-size: 0.85rem;" data-id="${p.id}">
+                <i data-icon="plus"></i>
+                <span>إضافة</span>
+              </button>
+            </div>
+          </div>
+        `;
+        list.appendChild(itemCard);
+      });
+
+      document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const pid = btn.getAttribute('data-id');
+          const found = products.find(x => x.id === pid);
+          if (found) {
+            localCart.push(found);
+            updateCartTotals();
+            AudioFeedback.success();
+          }
+        });
+      });
+
+      renderAllIcons(document);
+    }
+
+    function updateCartTotals() {
+      const countEl = document.getElementById('cartCount');
+      const totalEl = document.getElementById('cartTotal');
+      countEl.innerText = localCart.length;
+      const sum = localCart.reduce((acc, it) => acc + it.price, 0);
+      totalEl.innerText = `${sum.toFixed(2)} ج.م`;
+    }
+
+    // Submit new Order
+    document.getElementById('submitOrderBtn').addEventListener('click', () => {
+      if (localCart.length === 0) {
+        alert('يرجى إضافة منتجات إلى السلة أولاً!');
+        return;
+      }
+
+      fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerName: 'عميل تجريبي جديد',
+          customerPhone: '01012345678',
+          items: localCart.map(it => ({ productId: it.id, quantity: 1 }))
+        })
+      })
+      .then(res => res.json())
+      .then(newOrder => {
+        currentOrderId = newOrder.id;
+        currentOrder = newOrder;
+        localCart = [];
+        updateCartTotals();
+        if (window.socket) window.socket.emit('customer_join', currentOrderId);
+        tabTrackBtn.click();
+        AudioFeedback.complete();
+        alert(`تم إرسال طلبك (${newOrder.id}) بنجاح إلى شاشة العربة الذكية لمُحضّر الطلبات!`);
+      })
+      .catch(() => {
+        alert('تم حفظ الطلب محلياً.');
+      });
+    });
+  </script>
+</body>
+</html>

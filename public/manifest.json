@@ -1,0 +1,26 @@
+{
+  "name": "العربة الذكية | Smart Picker Cart",
+  "short_name": "عربة التجميع",
+  "description": "نظام عربة التسوق الذكية لمُحضّري الطلبات في السوبر ماركت وتتبع العميل والتخليص السريع",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#04151F",
+  "theme_color": "#04151F",
+  "orientation": "portrait",
+  "dir": "rtl",
+  "lang": "ar",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

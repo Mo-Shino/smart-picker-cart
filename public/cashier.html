@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>محطة الكاشير والتسليم | Smart Fast-Pass</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#04151F">
+  <link rel="stylesheet" href="/css/style.css">
+  
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- Supabase Client for Cloud Realtime -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/config.js"></script>
+  <script src="/js/db.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Header -->
+    <header class="top-header">
+      <div class="brand-badge">
+        <a href="/" style="color: var(--wheat); text-decoration: none; display: flex; align-items: center; justify-content: center;">
+          <i data-icon="arrow-right"></i>
+        </a>
+        <div>
+          <h1 class="brand-title">نقطة الكاشير السريع</h1>
+          <p class="brand-subtitle">محطة التخليص (Fast-Pass Gate)</p>
+        </div>
+      </div>
+      <div class="status-pill">
+        <div class="pulse-dot"></div>
+        <span>نقطة نشطة POS-01</span>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Fast-Pass QR Scanner Card -->
+      <div class="card card-highlight" style="text-align: center; padding: 20px;">
+        <div style="width: 52px; height: 52px; border-radius: var(--radius-sm); background: rgba(196, 73, 0, 0.15); display: flex; align-items: center; justify-content: center; margin: 0 auto 12px auto; color: var(--burnt-orange);">
+          <i data-icon="qrcode" class="icon-xl"></i>
+        </div>
+        <h2 style="font-size: 1.25rem; font-weight: 700; color: #FFF; margin-bottom: 6px;">مسح رمز تخليص العربة (Master QR)</h2>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+          امسح الكود المعروض على شاشة العربة لاعتماد الطلب فوراً دون إعادة مسح المنتجات
+        </p>
+
+        <button id="openCashierScannerBtn" class="btn btn-primary" style="margin-bottom: 10px;">
+          <i data-icon="scan" class="icon-lg"></i>
+          <span>فتح الكاميرا لمسح Master QR</span>
+        </button>
+
+        <button id="quickAuditActiveBtn" class="btn btn-secondary" style="font-size: 0.9rem;">
+          <i data-icon="shield-check"></i>
+          <span>استدعاء مباشر لأوردر العربة #01</span>
+        </button>
+      </div>
+
+      <!-- AUDIT BREAKDOWN CARD (Visible when QR is scanned) -->
+      <div id="auditCard" class="card" style="display: none; border-color: rgba(16, 185, 129, 0.4);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span class="badge badge-picked num-font" id="auditOrderId">ORD-101</span>
+              <span class="badge badge-sub" id="auditCartId">العربة #01</span>
+            </div>
+            <div style="font-size: 0.85rem; color: var(--text-white); font-weight: 700; margin-top: 4px;" id="auditCustomerName">العميل: كريم محمود</div>
+          </div>
+          <div style="text-align: left;">
+            <div class="num-font" style="font-size: 1.35rem; font-weight: 700; color: var(--wheat);" id="auditTotal">185.00 ج.م</div>
+            <div style="font-size: 0.72rem; color: var(--text-muted);">تم التدقيق الرقمي بالباركود</div>
+          </div>
+        </div>
+
+        <!-- Verified Items Checklist -->
+        <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--wheat); margin-bottom: 8px;">مراجعة الأصناف المطابقة في العربة:</h4>
+        <div id="auditItemsList" style="display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; margin-bottom: 16px;">
+          <!-- Items inserted here -->
+        </div>
+
+        <!-- Single Action Button to Dispatch -->
+        <button id="approveDispatchBtn" class="btn btn-primary" style="background: var(--success); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);">
+          <i data-icon="check-circle" class="icon-lg"></i>
+          <span>اعتماد الفاتورة وخروج الطلب للتسليم</span>
+        </button>
+      </div>
+
+      <!-- INVOICE SUCCESS MODAL -->
+      <div id="invoiceSuccessCard" class="card card-highlight" style="display: none; text-align: center; padding: 24px;">
+        <div style="color: #10B981; margin-bottom: 10px;">
+          <i data-icon="shield-check" class="icon-xl"></i>
+        </div>
+        <h3 style="font-size: 1.25rem; font-weight: 700; color: #FFF; margin-bottom: 6px;">تم إنهاء وتسليم الطلب بنجاح!</h3>
+        <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 14px;">
+          تم إرسال الفاتورة الإلكترونية لهاتف العميل وتفريغ العربة للأوردر التالي
+        </p>
+        <button id="resetCashierBtn" class="btn btn-secondary">
+          <i data-icon="refresh"></i>
+          <span>استقبال عربة جديدة</span>
+        </button>
+      </div>
+    </main>
+
+    <!-- SCANNER MODAL -->
+    <div id="cashierScannerModal" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <h3 style="font-size: 1.1rem; font-weight: 700; color: #FFF;">مسح Master QR الخاص بالعربة</h3>
+          <button id="closeCashierScanBtn" style="background: none; border: none; color: var(--text-muted); cursor: pointer;">
+            <i data-icon="x" class="icon-lg"></i>
+          </button>
+        </div>
+        <div id="cashierScannerViewport" class="scanner-viewport">
+          <div id="cashierReader" style="width: 100%; height: 100%;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/js/icons.js"></script>
+  <script src="/js/audio.js"></script>
+  <script src="/js/scanner.js"></script>
+
+  <script>
+    let currentAuditedOrder = null;
+
+    // Direct audit of default active order via AppDB
+    document.getElementById('quickAuditActiveBtn').addEventListener('click', async () => {
+      const ord = await AppDB.getOrder('ORD-101');
+      if (ord) {
+        displayAudit(ord);
+      } else {
+        alert('لا يوجد أوردر نشط حالياً على العربة.');
+      }
+    });
+
+    // Scanner Modal
+    const cashierModal = document.getElementById('cashierScannerModal');
+    const openScannerBtn = document.getElementById('openCashierScannerBtn');
+    const closeScannerBtn = document.getElementById('closeCashierScanBtn');
+
+    openScannerBtn.addEventListener('click', () => {
+      cashierModal.classList.add('active');
+      BarcodeScanner.startCamera('cashierReader', (decoded) => {
+        cashierModal.classList.remove('active');
+        BarcodeScanner.stopCamera();
+        handleScannedQr(decoded);
+      });
+    });
+
+    closeScannerBtn.addEventListener('click', () => {
+      cashierModal.classList.remove('active');
+      BarcodeScanner.stopCamera();
+    });
+
+    async function handleScannedQr(text) {
+      let orderId = text;
+      try {
+        const parsed = JSON.parse(text);
+        if (parsed.orderId) orderId = parsed.orderId;
+      } catch (e) {}
+
+      const order = await AppDB.getOrder(orderId);
+      if (order) {
+        displayAudit(order);
+        AudioFeedback.success();
+      } else {
+        alert('تعذر العثور على أوردر مرتبط بهذا الرمز.');
+      }
+    }
+
+    function displayAudit(order) {
+      currentAuditedOrder = order;
+      document.getElementById('auditOrderId').innerText = order.id;
+      document.getElementById('auditCartId').innerText = order.cartId || 'العربة #01';
+      document.getElementById('auditCustomerName').innerText = `العميل: ${order.customerName}`;
+      document.getElementById('auditTotal').innerText = `${order.totalAmount.toFixed(2)} ج.م`;
+
+      const list = document.getElementById('auditItemsList');
+      list.innerHTML = '';
+
+      (order.items || []).forEach(it => {
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.justifyContent = 'space-between';
+        row.style.alignItems = 'center';
+        row.style.padding = '8px 10px';
+        row.style.background = 'rgba(0,0,0,0.2)';
+        row.style.borderRadius = 'var(--radius-sm)';
+        row.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <i data-icon="check-circle" style="color: #10B981;"></i>
+            <span style="font-size: 0.88rem; color: #FFF; font-weight: 500;">${it.name}</span>
+          </div>
+          <div class="num-font" style="font-size: 0.85rem; color: var(--wheat); font-weight: 700;">
+            ${it.requiredQty} ${it.unit || 'قطعة'}
+          </div>
+        `;
+        list.appendChild(row);
+      });
+
+      document.getElementById('auditCard').style.display = 'block';
+      document.getElementById('invoiceSuccessCard').style.display = 'none';
+      renderAllIcons(document);
+    }
+
+    // Approve & Dispatch via AppDB
+    document.getElementById('approveDispatchBtn').addEventListener('click', async () => {
+      if (!currentAuditedOrder) return;
+
+      const res = await AppDB.dispatchOrder(currentAuditedOrder.id, 'POS-01');
+      if (res && res.success) {
+        AudioFeedback.complete();
+        document.getElementById('auditCard').style.display = 'none';
+        document.getElementById('invoiceSuccessCard').style.display = 'block';
+      }
+    });
+
+    if (window.io) {
+      window.socket = io();
+      window.socket.on('clearance_result', (res) => {
+        if (res.success) {
+          AudioFeedback.complete();
+          document.getElementById('auditCard').style.display = 'none';
+          document.getElementById('invoiceSuccessCard').style.display = 'block';
+        } else {
+          alert(res.message);
+        }
+      });
+    }
+
+    document.getElementById('resetCashierBtn').addEventListener('click', () => {
+      currentAuditedOrder = null;
+      document.getElementById('invoiceSuccessCard').style.display = 'none';
+    });
+  </script>
+</body>
+</html>
