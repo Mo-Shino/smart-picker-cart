@@ -3,153 +3,187 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>تطبيق العميل | Smart Picker</title>
+  <title>متابعة وتجهيز الطلب | KARTFLOW</title>
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#04151F">
+  <meta name="theme-color" content="#12171E">
   <link rel="stylesheet" href="/css/style.css">
   
   <script src="/socket.io/socket.io.js"></script>
-  <!-- Firebase SDK (Official Google CDN) -->
+  <!-- Firebase Cloud SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="/config.js"></script>
   <script src="/js/db.js"></script>
 </head>
 <body>
-  <div class="app-container">
-    <!-- Top Header -->
-    <header class="top-header">
-      <div class="brand-badge">
-        <a href="/" style="color: var(--wheat); text-decoration: none; display: flex; align-items: center; justify-content: center;">
-          <i data-icon="arrow-right"></i>
+  <div class="device-shell">
+    <!-- Navbar -->
+    <header class="nav-header">
+      <div class="brand-meta">
+        <a href="/" style="width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--bg-surface); border: 1px solid var(--border-light); display: flex; align-items: center; justify-content: center; color: var(--text-primary); text-decoration: none;">
+          <i data-icon="arrow-right" class="icon-sm"></i>
         </a>
         <div>
-          <h1 class="brand-title">هايبر ماركت الذكي</h1>
-          <p class="brand-subtitle">خدمة التجهيز السريع</p>
+          <h1 class="brand-name" style="font-size: 1.05rem;">متابعة الطلب</h1>
+          <p class="brand-tag">تجهيز مباشر من الأرفف</p>
         </div>
       </div>
-      <div class="status-pill">
-        <div class="pulse-dot"></div>
-        <span id="customerStatusTag">تتبع مباشر</span>
-      </div>
+      <div class="live-pill num" id="customerStatusTag">تتبع لحظي</div>
     </header>
 
-    <!-- Navigation Tabs (Catalog vs Live Tracking) -->
-    <div style="display: flex; background: var(--bg-secondary); border-bottom: 1px solid var(--border-subtle); padding: 6px 12px; gap: 8px;">
-      <button id="tabTrackBtn" class="btn btn-secondary" style="flex: 1; padding: 10px; font-size: 0.9rem; border-color: var(--burnt-orange); color: var(--text-white); background: rgba(196, 73, 0, 0.15);">
-        <i data-icon="clock"></i>
-        <span>متابعة الطلب الحية</span>
-      </button>
-      <button id="tabShopBtn" class="btn btn-secondary" style="flex: 1; padding: 10px; font-size: 0.9rem;">
-        <i data-icon="cart"></i>
-        <span>تسوق منتجات جديدة</span>
-      </button>
+    <!-- Segmented Tab Switcher (Inspired by Modern iOS / Dribbble UIs) -->
+    <div style="padding: 10px 20px 0 20px;">
+      <div style="background: var(--bg-subtle); padding: 4px; border-radius: var(--radius-pill); display: flex; border: 1px solid var(--border-light);">
+        <button id="tabTrackBtn" style="flex: 1; padding: 10px; border-radius: var(--radius-pill); border: none; font-family: var(--font-main); font-size: 0.85rem; font-weight: 600; cursor: pointer; background: #FFFFFF; color: var(--text-primary); box-shadow: var(--shadow-sm); transition: all 0.2s ease;">
+          <i data-icon="clock" class="icon-sm" style="color: var(--brand-amber);"></i>
+          <span>تتبع الأوردر الحية</span>
+        </button>
+        <button id="tabShopBtn" style="flex: 1; padding: 10px; border-radius: var(--radius-pill); border: none; font-family: var(--font-main); font-size: 0.85rem; font-weight: 500; cursor: pointer; background: transparent; color: var(--text-muted); transition: all 0.2s ease;">
+          <i data-icon="cart" class="icon-sm"></i>
+          <span>طلب جديد</span>
+        </button>
+      </div>
     </div>
 
     <!-- MAIN VIEW 1: LIVE ORDER TRACKING -->
-    <main id="trackingView" class="main-content">
-      <!-- Live Order Header Card -->
-      <div class="card card-highlight">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+    <main id="trackingView" class="content-body">
+      <!-- Order Live Header Card -->
+      <div class="card-white" style="padding: 22px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
           <div>
-            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-              <span class="badge badge-picked num-font" id="liveOrderId">ORD-101</span>
-              <span class="badge badge-sub" id="assignedCartBadge">عربة #01</span>
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+              <span class="badge-tag tag-amber num" id="liveOrderId">ORD-101</span>
+              <span class="badge-tag tag-neutral" id="assignedCartBadge">العربة #01</span>
             </div>
-            <h2 style="font-size: 1.15rem; font-weight: 700; color: #FFF;" id="orderStageTitle">جاري تجميع طلبك الآن في المتجر</h2>
+            <h2 style="font-size: 1.2rem; font-weight: 700; color: var(--text-primary);" id="orderStageTitle">
+              جاري تجميع طلبك الآن من الأرفف
+            </h2>
           </div>
           <div style="text-align: left;">
-            <div class="num-font" id="orderTotalText" style="font-size: 1.25rem; font-weight: 700; color: var(--wheat);">185.00 ج.م</div>
-            <div style="font-size: 0.75rem; color: var(--text-muted);">الإجمالي التقديري</div>
+            <div class="num" id="orderTotalText" style="font-size: 1.35rem; font-weight: 800; color: var(--brand-amber);">185.00 ج.م</div>
+            <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 500;">الإجمالي التقديري</div>
           </div>
         </div>
 
-        <!-- Progress Bar -->
-        <div style="margin-top: 10px;">
-          <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">
-            <span>المنتجات التي وُضعت في العربة</span>
-            <span class="num-font" id="liveProgressPercent" style="color: var(--wheat); font-weight: 700;">0%</span>
+        <!-- 3-Step Journey Stepper (Inspired by Image 3) -->
+        <div class="aisle-stepper" style="margin: 18px 0 10px 0;">
+          <div class="aisle-step">
+            <div class="step-circle completed"><i data-icon="check-circle" class="icon-sm"></i></div>
+            <span class="step-label">تم الاستلام</span>
           </div>
-          <div class="progress-container">
-            <div class="progress-fill" id="liveProgressBar" style="width: 0%;"></div>
+          <div class="aisle-step">
+            <div class="step-circle active" id="step2Circle"><i data-icon="clock" class="icon-sm"></i></div>
+            <span class="step-label" id="step2Label" style="color: var(--brand-amber); font-weight: 700;">التجميع بالعربة</span>
+          </div>
+          <div class="aisle-step">
+            <div class="step-circle" id="step3Circle">3</div>
+            <span class="step-label" id="step3Label">الكاشير والتسليم</span>
+          </div>
+          <div class="stepper-track"></div>
+        </div>
+
+        <!-- Progress Bar & Percentage -->
+        <div style="margin-top: 14px;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-muted); margin-bottom: 6px;">
+            <span>أصناف تم وضعها بالعربة</span>
+            <span class="num" id="liveProgressPercent" style="color: var(--brand-amber); font-weight: 700;">0%</span>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="liveProgressBar" style="width: 0%;"></div>
           </div>
         </div>
       </div>
 
-      <!-- LIVE SUBSTITUTION ALERT BANNER (If picker requests a substitute) -->
-      <div id="subAlertBanner" class="card card-violet" style="display: none; border: 2px solid var(--wheat); box-shadow: 0 0 20px rgba(239, 214, 172, 0.25);">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+      <!-- LIVE SUBSTITUTION ALERT BANNER (If picker flags an out of stock) -->
+      <div id="subAlertBanner" class="card-amber" style="display: none; padding: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
           <div style="display: flex; align-items: center; gap: 8px;">
-            <i data-icon="refresh" style="color: var(--wheat);"></i>
-            <span style="font-weight: 700; color: var(--text-white); font-size: 0.95rem;">اقتراح بديل ذكي لصنف غير متوفر</span>
+            <i data-icon="refresh" class="icon-md" style="color: #92400E;"></i>
+            <span style="font-weight: 700; font-size: 0.95rem; color: #78350F;">اقتراح بديل ذكي لصنف غير متوفر</span>
           </div>
-          <span class="badge" style="background: var(--burnt-orange); color: #FFF; font-family: var(--font-num);" id="subTimer">03:00</span>
+          <span class="badge-tag num" style="background: #FFFFFF; color: #92400E; font-weight: 700;" id="subTimer">03:00</span>
         </div>
 
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
-          صنف <strong id="subOriginalName" style="color: #FFF;">...</strong> غير متوفر في الرف. اقترح المُحضّر البديل التالي:
+        <p style="font-size: 0.82rem; color: #92400E; margin-bottom: 14px; line-height: 1.5;">
+          صنف <strong id="subOriginalName" style="color: #78350F;">...</strong> غير متوفر في الرف. اقترح المُحضّر هذا البديل:
         </p>
 
-        <!-- Substitute Details -->
-        <div class="card" style="background: rgba(0,0,0,0.3); margin-bottom: 14px; padding: 12px;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-              <div style="font-weight: 700; color: var(--wheat); font-size: 1rem;" id="subNewName">...</div>
-              <div style="font-size: 0.8rem; color: var(--text-muted);">نفس الفئة والجودة</div>
-            </div>
-            <div class="num-font" style="font-weight: 700; color: #FFF; font-size: 1.1rem;" id="subNewPrice">... ج.م</div>
+        <!-- Substitute Details Card -->
+        <div style="background: #FFFFFF; border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 14px; box-shadow: var(--shadow-sm); display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-weight: 700; color: var(--text-primary); font-size: 0.95rem;" id="subNewName">...</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">نفس الفئة والجودة العالية</div>
           </div>
+          <div class="num" style="font-weight: 800; color: var(--brand-amber); font-size: 1.1rem;" id="subNewPrice">... ج.م</div>
         </div>
 
-        <!-- Substitution Action Buttons -->
+        <!-- Action Buttons -->
         <div style="display: flex; gap: 10px;">
-          <button id="acceptSubBtn" class="btn btn-primary" style="flex: 2; padding: 12px;">
-            <i data-icon="check-circle"></i>
+          <button id="acceptSubBtn" class="btn-action btn-dark" style="flex: 2; padding: 12px; font-size: 0.9rem;">
+            <i data-icon="check-circle" class="icon-sm"></i>
             <span>قبول واختيار البديل</span>
           </button>
-          <button id="rejectSubBtn" class="btn btn-danger-outline" style="flex: 1; padding: 12px;">
-            <i data-icon="x"></i>
-            <span>إلغاء الصنف</span>
+          <button id="rejectSubBtn" class="btn-action btn-soft-danger" style="flex: 1; padding: 12px; font-size: 0.85rem;">
+            <i data-icon="x" class="icon-sm"></i>
+            <span>إلغاء</span>
           </button>
         </div>
       </div>
 
       <!-- Live Items Breakdown -->
       <div>
-        <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-white); margin-bottom: 10px;">حالة كل صنف في طلبك</h3>
-        <div id="customerItemsList" style="display: flex; flex-direction: column; gap: 8px;">
-          <!-- Items will be rendered here -->
+        <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 12px;">قائمة أصناف طلبك</h3>
+        <div id="customerItemsList" style="display: flex; flex-direction: column; gap: 10px;">
+          <!-- Dynamically populated -->
         </div>
       </div>
     </main>
 
     <!-- MAIN VIEW 2: SHOP CATALOG (To create new orders) -->
-    <main id="shopView" class="main-content" style="display: none;">
-      <div class="card card-highlight">
-        <h3 style="font-size: 1.1rem; font-weight: 700; color: #FFF; margin-bottom: 4px;">تسوق طلب جديد</h3>
-        <p style="font-size: 0.82rem; color: var(--text-muted);">اختر المنتجات ليتم إرسالها فوراً إلى شاشة أقرب عربة ذكية</p>
+    <main id="shopView" class="content-body" style="display: none;">
+      <div class="card-white" style="padding: 16px 20px;">
+        <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary); margin-bottom: 2px;">تسوق منتجات جديدة</h3>
+        <p style="font-size: 0.8rem; color: var(--text-muted);">اختر المنتجات ليتم إرسالها فوراً لشاشة أقرب عربة ذكية</p>
       </div>
 
-      <!-- Products Grid -->
       <div id="catalogList" style="display: flex; flex-direction: column; gap: 10px;">
         <!-- Populated dynamically -->
       </div>
     </main>
 
-    <!-- Bottom Checkout Bar (Active in Shop View) -->
-    <div id="shopBottomBar" class="bottom-dock" style="display: none; align-items: center; justify-content: space-between;">
+    <!-- Bottom Checkout Floating Pill (Active in Shop View) -->
+    <div id="shopBottomBar" class="dock-nav" style="display: none; justify-content: space-between; padding: 10px 18px; max-width: 420px;">
       <div>
-        <div style="font-size: 0.75rem; color: var(--text-muted);">السلة الحالية: <span id="cartCount" class="num-font" style="color: var(--wheat); font-weight: 700;">0</span> أصناف</div>
-        <div class="num-font" id="cartTotal" style="font-size: 1.25rem; font-weight: 700; color: var(--wheat);">0.00 ج.م</div>
+        <div style="font-size: 0.72rem; color: var(--text-on-dark-muted);">السلة: <span id="cartCount" class="num" style="color: #FFF; font-weight: 700;">0</span> أصناف</div>
+        <div class="num" id="cartTotal" style="font-size: 1.2rem; font-weight: 800; color: var(--brand-amber);">0.00 ج.م</div>
       </div>
-      <button id="submitOrderBtn" class="btn btn-primary" style="width: auto; padding: 12px 24px;">
-        <i data-icon="cart"></i>
-        <span>إرسال للعربة الذكية</span>
+      <button id="submitOrderBtn" class="btn-action btn-amber" style="width: auto; padding: 10px 20px; font-size: 0.9rem;">
+        <i data-icon="cart" class="icon-sm"></i>
+        <span>إرسال للعربة</span>
       </button>
     </div>
+
+    <!-- Regular Dock Nav (Active in Track View) -->
+    <nav id="regularDock" class="dock-nav">
+      <a href="/" class="dock-item">
+        <i data-icon="home" class="icon-md"></i>
+        <span>الرئيسية</span>
+      </a>
+      <a href="/picker.html" class="dock-item">
+        <i data-icon="scan" class="icon-md"></i>
+        <span>العربة</span>
+      </a>
+      <a href="/customer.html" class="dock-item active">
+        <i data-icon="clock" class="icon-md"></i>
+        <span>الطلب</span>
+      </a>
+      <a href="/cashier.html" class="dock-item">
+        <i data-icon="receipt" class="icon-md"></i>
+        <span>الكاشير</span>
+      </a>
+    </nav>
   </div>
 
-  <!-- Scripts -->
   <script src="/js/icons.js"></script>
   <script src="/js/audio.js"></script>
   <script>
@@ -158,7 +192,6 @@
     let localCart = [];
     let subCountdownInterval = null;
 
-    // Load initial Order via AppDB
     async function initCustomerOrder() {
       const order = await AppDB.getOrder(currentOrderId);
       if (order) {
@@ -166,9 +199,9 @@
         renderLiveTracking();
       }
 
-      AppDB.subscribeOrder(currentOrderId, (updatedOrder) => {
-        if (updatedOrder) {
-          currentOrder = updatedOrder;
+      AppDB.subscribeOrder(currentOrderId, (updated) => {
+        if (updated) {
+          currentOrder = updated;
           renderLiveTracking();
           AudioFeedback.success();
         }
@@ -176,20 +209,12 @@
     }
     initCustomerOrder();
 
-    // Socket.io fallback support
     if (window.io) {
       window.socket = io();
       window.socket.emit('customer_join', currentOrderId);
 
-      window.socket.on('order_synced', (order) => {
-        if (!AppDB.isSupabase()) {
-          currentOrder = order;
-          renderLiveTracking();
-        }
-      });
-
       window.socket.on('order_updated', (order) => {
-        if (!AppDB.isSupabase() && currentOrder && currentOrder.id === order.id) {
+        if (!AppDB.isCloudActive() && currentOrder && currentOrder.id === order.id) {
           currentOrder = order;
           renderLiveTracking();
           AudioFeedback.success();
@@ -200,7 +225,7 @@
         currentOrder = order;
         renderLiveTracking();
         AudioFeedback.complete();
-        alert('تهانينا! تم اكتمال تجهيز طلبك واعتماده عند الكاشير بنجاح وهو جاهز للاستلام.');
+        alert('تم اكتمال تجهيز طلبك واعتماده عند الكاشير بنجاح!');
       });
 
       window.socket.on('substitution_alert', ({ orderId, subRequest, order }) => {
@@ -212,12 +237,11 @@
       });
     }
 
-    // Render Live Tracking Screen
     function renderLiveTracking() {
       if (!currentOrder) return;
 
       document.getElementById('liveOrderId').innerText = currentOrder.id;
-      document.getElementById('assignedCartBadge').innerText = currentOrder.cartId || 'عربة #01';
+      document.getElementById('assignedCartBadge').innerText = currentOrder.cartId || 'العربة #01';
       document.getElementById('orderTotalText').innerText = `${currentOrder.totalAmount.toFixed(2)} ج.م`;
 
       const items = currentOrder.items || [];
@@ -228,15 +252,24 @@
       document.getElementById('liveProgressPercent').innerText = `${pickedCount}/${totalCount} (${pct}%)`;
       document.getElementById('liveProgressBar').style.width = `${pct}%`;
 
+      const step2Circle = document.getElementById('step2Circle');
+      const step3Circle = document.getElementById('step3Circle');
+
       if (currentOrder.status === 'completed') {
         document.getElementById('orderStageTitle').innerText = 'تم التجهيز واعتماد الفاتورة عند الكاشير';
+        step2Circle.className = 'step-circle completed';
+        step2Circle.innerHTML = '<i data-icon="check-circle" class="icon-sm"></i>';
+        step3Circle.className = 'step-circle completed';
+        step3Circle.innerHTML = '<i data-icon="check-circle" class="icon-sm"></i>';
       } else if (currentOrder.status === 'ready_for_dispatch') {
         document.getElementById('orderStageTitle').innerText = 'العربة متجهة لنقطة الكاشير للتسليم السريع';
+        step2Circle.className = 'step-circle completed';
+        step2Circle.innerHTML = '<i data-icon="check-circle" class="icon-sm"></i>';
+        step3Circle.className = 'step-circle active';
       } else {
         document.getElementById('orderStageTitle').innerText = 'المُحضّر يقوم بتجميع طلبك الآن في الممرات';
       }
 
-      // Check for active pending substitutions
       const activeSub = (currentOrder.substitutionRequests || []).find(s => s.status === 'pending');
       if (activeSub) {
         showSubstitutionBanner(activeSub);
@@ -245,37 +278,32 @@
         if (subCountdownInterval) clearInterval(subCountdownInterval);
       }
 
-      // Render Item List
       const container = document.getElementById('customerItemsList');
       container.innerHTML = '';
 
       items.forEach(item => {
-        let statusBadge = `<span class="badge badge-pending"><i data-icon="clock"></i> في الانتظار</span>`;
-        let border = '1px solid var(--border-subtle)';
+        let statusBadge = `<span class="badge-tag tag-neutral">في الانتظار</span>`;
 
         if (item.status === 'picked') {
-          statusBadge = `<span class="badge badge-picked"><i data-icon="check-circle"></i> تم الوضع بالعربة</span>`;
-          border = '1px solid rgba(16, 185, 129, 0.3)';
+          statusBadge = `<span class="badge-tag tag-success"><i data-icon="check-circle" class="icon-sm"></i> تم الوضع بالعربة</span>`;
         } else if (item.status === 'out_of_stock') {
-          statusBadge = `<span class="badge badge-sub"><i data-icon="refresh"></i> بديل مقترح</span>`;
-          border = '1px solid var(--wheat)';
+          statusBadge = `<span class="badge-tag tag-amber"><i data-icon="refresh" class="icon-sm"></i> بديل مقترح</span>`;
         } else if (item.status === 'cancelled') {
-          statusBadge = `<span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #EF4444;"><i data-icon="x"></i> ملغي</span>`;
+          statusBadge = `<span class="badge-tag" style="background: var(--status-danger-soft); color: var(--status-danger);"><i data-icon="x" class="icon-sm"></i> ملغي</span>`;
         }
 
         const card = document.createElement('div');
-        card.className = 'card';
-        card.style.padding = '12px 14px';
-        card.style.border = border;
+        card.className = 'card-white';
+        card.style.padding = '14px 18px';
         card.innerHTML = `
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
-              <div style="font-weight: 700; font-size: 0.95rem; color: #FFF;">${item.name}</div>
-              <div style="font-size: 0.8rem; color: var(--text-muted);">${item.category || 'عام'} • ${item.requiredQty} ${item.unit || 'قطعة'}</div>
+              <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary);">${item.name}</div>
+              <div style="font-size: 0.78rem; color: var(--text-muted);">${item.category || 'عام'} • ${item.requiredQty} ${item.unit || 'قطعة'}</div>
             </div>
             <div style="text-align: left;">
               ${statusBadge}
-              <div class="num-font" style="font-size: 0.85rem; color: var(--wheat); font-weight: 700; margin-top: 4px;">
+              <div class="num" style="font-size: 0.85rem; color: var(--brand-amber); font-weight: 700; margin-top: 4px;">
                 ${(item.price * item.requiredQty).toFixed(2)} ج.م
               </div>
             </div>
@@ -287,7 +315,6 @@
       renderAllIcons(document);
     }
 
-    // Substitution Banner Controller
     function showSubstitutionBanner(sub) {
       const banner = document.getElementById('subAlertBanner');
       banner.style.display = 'block';
@@ -295,7 +322,6 @@
       document.getElementById('subNewName').innerText = sub.substituteProduct.name;
       document.getElementById('subNewPrice').innerText = `${sub.substituteProduct.price.toFixed(2)} ج.م`;
 
-      // Setup 3-min Timer Countdown
       if (subCountdownInterval) clearInterval(subCountdownInterval);
       const updateTimer = () => {
         const remainingMs = Math.max(0, (sub.expiresAt || (Date.now() + 180000)) - Date.now());
@@ -303,14 +329,11 @@
         const mins = String(Math.floor(totalSecs / 60)).padStart(2, '0');
         const secs = String(totalSecs % 60).padStart(2, '0');
         document.getElementById('subTimer').innerText = `${mins}:${secs}`;
-        if (remainingMs <= 0) {
-          clearInterval(subCountdownInterval);
-        }
+        if (remainingMs <= 0) clearInterval(subCountdownInterval);
       };
       updateTimer();
       subCountdownInterval = setInterval(updateTimer, 1000);
 
-      // Buttons Action via AppDB
       document.getElementById('acceptSubBtn').onclick = async () => {
         await AppDB.respondSubstitution(currentOrder.id, sub.id, 'accepted');
         banner.style.display = 'none';
@@ -324,56 +347,58 @@
       };
     }
 
-    // Tabs Switching
     const tabTrackBtn = document.getElementById('tabTrackBtn');
     const tabShopBtn = document.getElementById('tabShopBtn');
     const trackingView = document.getElementById('trackingView');
     const shopView = document.getElementById('shopView');
     const shopBottomBar = document.getElementById('shopBottomBar');
+    const regularDock = document.getElementById('regularDock');
 
     tabTrackBtn.addEventListener('click', () => {
-      tabTrackBtn.style.borderColor = 'var(--burnt-orange)';
-      tabTrackBtn.style.color = '#FFF';
-      tabTrackBtn.style.background = 'rgba(196, 73, 0, 0.15)';
-      tabShopBtn.style.borderColor = 'var(--border-subtle)';
-      tabShopBtn.style.color = 'var(--text-accent)';
-      tabShopBtn.style.background = 'var(--surface-elevated)';
+      tabTrackBtn.style.background = '#FFFFFF';
+      tabTrackBtn.style.color = 'var(--text-primary)';
+      tabTrackBtn.style.boxShadow = 'var(--shadow-sm)';
+      tabShopBtn.style.background = 'transparent';
+      tabShopBtn.style.color = 'var(--text-muted)';
+      tabShopBtn.style.boxShadow = 'none';
       trackingView.style.display = 'flex';
       shopView.style.display = 'none';
       shopBottomBar.style.display = 'none';
+      regularDock.style.display = 'flex';
     });
 
     tabShopBtn.addEventListener('click', () => {
-      tabShopBtn.style.borderColor = 'var(--burnt-orange)';
-      tabShopBtn.style.color = '#FFF';
-      tabShopBtn.style.background = 'rgba(196, 73, 0, 0.15)';
-      tabTrackBtn.style.borderColor = 'var(--border-subtle)';
-      tabTrackBtn.style.color = 'var(--text-accent)';
-      tabTrackBtn.style.background = 'var(--surface-elevated)';
+      tabShopBtn.style.background = '#FFFFFF';
+      tabShopBtn.style.color = 'var(--text-primary)';
+      tabShopBtn.style.boxShadow = 'var(--shadow-sm)';
+      tabTrackBtn.style.background = 'transparent';
+      tabTrackBtn.style.color = 'var(--text-muted)';
+      tabTrackBtn.style.boxShadow = 'none';
       trackingView.style.display = 'none';
       shopView.style.display = 'flex';
       shopBottomBar.style.display = 'flex';
+      regularDock.style.display = 'none';
       loadShopCatalog();
     });
 
-    // Load Catalog for new shopping
     async function loadShopCatalog() {
       const products = await AppDB.getProducts();
       const list = document.getElementById('catalogList');
       list.innerHTML = '';
       products.forEach(p => {
         const itemCard = document.createElement('div');
-        itemCard.className = 'card';
+        itemCard.className = 'card-white';
+        itemCard.style.padding = '14px 18px';
         itemCard.innerHTML = `
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
-              <div style="font-size: 0.8rem; color: var(--wheat);">${p.aisle}</div>
-              <div style="font-weight: 700; color: #FFF; font-size: 1rem;">${p.name}</div>
-              <div class="num-font" style="font-weight: 700; color: var(--wheat); margin-top: 4px;">${p.price.toFixed(2)} ج.م</div>
+              <div style="font-size: 0.78rem; color: var(--text-muted);">${p.aisle}</div>
+              <div style="font-weight: 600; color: var(--text-primary); font-size: 0.95rem;">${p.name}</div>
+              <div class="num" style="font-weight: 700; color: var(--brand-amber); margin-top: 4px;">${p.price.toFixed(2)} ج.م</div>
             </div>
             <div>
-              <button class="btn btn-primary add-to-cart-btn" style="width: auto; padding: 10px 16px; font-size: 0.85rem;" data-id="${p.id}">
-                <i data-icon="plus"></i>
+              <button class="btn-action btn-dark add-to-cart-btn" style="width: auto; padding: 10px 18px; font-size: 0.85rem;" data-id="${p.id}">
+                <i data-icon="plus" class="icon-sm"></i>
                 <span>إضافة</span>
               </button>
             </div>
@@ -398,14 +423,11 @@
     }
 
     function updateCartTotals() {
-      const countEl = document.getElementById('cartCount');
-      const totalEl = document.getElementById('cartTotal');
-      countEl.innerText = localCart.length;
+      document.getElementById('cartCount').innerText = localCart.length;
       const sum = localCart.reduce((acc, it) => acc + it.price, 0);
-      totalEl.innerText = `${sum.toFixed(2)} ج.م`;
+      document.getElementById('cartTotal').innerText = `${sum.toFixed(2)} ج.م`;
     }
 
-    // Submit new Order
     document.getElementById('submitOrderBtn').addEventListener('click', () => {
       if (localCart.length === 0) {
         alert('يرجى إضافة منتجات إلى السلة أولاً!');
@@ -427,13 +449,9 @@
         currentOrder = newOrder;
         localCart = [];
         updateCartTotals();
-        if (window.socket) window.socket.emit('customer_join', currentOrderId);
         tabTrackBtn.click();
         AudioFeedback.complete();
-        alert(`تم إرسال طلبك (${newOrder.id}) بنجاح إلى شاشة العربة الذكية لمُحضّر الطلبات!`);
-      })
-      .catch(() => {
-        alert('تم حفظ الطلب محلياً.');
+        alert(`تم إرسال طلبك (${newOrder.id}) بنجاح إلى شاشة العربة!`);
       });
     });
   </script>

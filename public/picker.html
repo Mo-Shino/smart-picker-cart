@@ -3,189 +3,208 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>شاشة عربة التجميع | Smart Picker Cart</title>
+  <title>عربة التجميع الذكية | KARTFLOW Workstation</title>
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#04151F">
+  <meta name="theme-color" content="#12171E">
   <link rel="stylesheet" href="/css/style.css">
   
   <script src="/socket.io/socket.io.js"></script>
-  <!-- Firebase SDK (Official Google CDN) -->
+  <!-- Firebase Cloud SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="/config.js"></script>
   <script src="/js/db.js"></script>
-  <!-- Html5Qrcode Library for Camera Barcode Scanning -->
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 </head>
 <body>
-  <div class="app-container">
-    <!-- Top Header -->
-    <header class="top-header">
-      <div class="brand-badge">
-        <a href="/" style="color: var(--wheat); text-decoration: none; display: flex; align-items: center; justify-content: center;">
-          <i data-icon="arrow-right"></i>
+  <div class="device-shell">
+    <!-- Navbar -->
+    <header class="nav-header">
+      <div class="brand-meta">
+        <a href="/" style="width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--bg-surface); border: 1px solid var(--border-light); display: flex; align-items: center; justify-content: center; color: var(--text-primary); text-decoration: none;">
+          <i data-icon="arrow-right" class="icon-sm"></i>
         </a>
         <div>
-          <h1 class="brand-title" id="cartTitle">عربة التجميع #01</h1>
-          <p class="brand-subtitle" id="pickerAssigned">المُحضّر: أحمد طارق</p>
+          <h1 class="brand-name" style="font-size: 1.05rem;" id="cartTitle">عربة التجميع #01</h1>
+          <p class="brand-tag" id="pickerAssigned">المُحضّر: أحمد طارق</p>
         </div>
       </div>
       <div style="display: flex; align-items: center; gap: 8px;">
-        <span class="status-pill num-font">
-          <i data-icon="battery" style="color: #34D399;"></i>
-          <span>94%</span>
+        <span class="badge-tag tag-neutral num" style="font-size: 0.75rem;">
+          <i data-icon="battery" class="icon-sm" style="color: var(--status-success);"></i>
+          <span>95%</span>
         </span>
-        <div class="status-pill">
-          <div class="pulse-dot"></div>
-          <span class="num-font" id="orderIdTag">ORD-101</span>
-        </div>
+        <div class="live-pill num" id="orderIdTag">ORD-101</div>
       </div>
     </header>
 
     <!-- Main Content -->
-    <main class="main-content">
-      <!-- Progress Bar & Counter -->
-      <div class="card" style="padding: 12px 16px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">تقدم التجهيز في الممرات</span>
-          <span class="num-font" id="progressText" style="font-weight: 700; color: var(--wheat); font-size: 0.95rem;">0 / 0 صنف (0%)</span>
+    <main class="content-body">
+      <!-- Route Progress Card -->
+      <div class="card-white" style="padding: 18px 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <i data-icon="map-pin" class="icon-sm" style="color: var(--brand-amber);"></i>
+            <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary);">مسار التجميع في المتجر</span>
+          </div>
+          <span class="num" id="progressText" style="font-size: 0.85rem; font-weight: 700; color: var(--brand-amber);">0 / 0 صنف (0%)</span>
         </div>
-        <div class="progress-container">
-          <div class="progress-fill" id="progressBar" style="width: 0%;"></div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="progressBar" style="width: 0%;"></div>
         </div>
       </div>
 
-      <!-- ACTIVE ITEM HERO CARD (Put-To-Light + Dynamic Route) -->
+      <!-- ACTIVE ITEM HERO WORKSTATION CARD (High Contrast Carbon Dark) -->
       <div id="activeItemSection">
-        <div class="hero-pick-card" id="heroCard">
-          <!-- Floating Aisle & Box Badges -->
-          <div class="aisle-badge-floating">
-            <i data-icon="map-pin"></i>
-            <span id="heroAisle">ممر 1A - رف 01</span>
-          </div>
-          <div class="bin-badge-floating">
-            <i data-icon="box"></i>
-            <span>الصندوق A</span>
+        <div class="card-dark" style="padding: 24px; border: 1px solid rgba(245, 158, 11, 0.35); box-shadow: 0 12px 36px rgba(18, 23, 30, 0.25);">
+          <!-- Top Tag Row -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+            <span class="badge-tag tag-amber" style="font-size: 0.82rem; padding: 6px 14px;">
+              <i data-icon="map-pin" class="icon-sm"></i>
+              <span id="heroAisle">ممر 1A - رف 01</span>
+            </span>
+            <span class="badge-tag" style="background: #2563EB; color: #FFFFFF; font-size: 0.78rem; padding: 6px 12px;">
+              <i data-icon="box" class="icon-sm"></i>
+              <span>الصندوق A</span>
+            </span>
           </div>
 
           <!-- Product Details -->
-          <div style="margin-top: 36px;">
-            <span class="badge badge-sub" id="heroCategory" style="margin-bottom: 6px;">حبوب وبقوليات</span>
-            <h2 class="item-big-title" id="heroName">أرز مصري فاخر 1 كجم</h2>
-            <div class="item-meta-row">
-              <span>الكمية: <strong class="num-font" id="heroQty" style="color: var(--wheat); font-size: 1.15rem;">1 كيس</strong></span>
-              <span>•</span>
-              <span class="num-font" id="heroPrice" style="color: var(--wheat); font-size: 1.15rem;">32.50 ج.م</span>
-            </div>
+          <div style="text-align: center; margin: 12px 0 20px 0;">
+            <span class="badge-tag" style="background: rgba(255,255,255,0.08); color: var(--text-on-dark-muted); margin-bottom: 8px;" id="heroCategory">حبوب وبقوليات</span>
+            <h2 style="font-size: 1.45rem; font-weight: 700; color: #FFFFFF; margin: 6px 0;" id="heroName">أرز مصري فاخر 1 كجم</h2>
             
-            <!-- Target Barcode Box -->
-            <div style="margin: 10px 0 16px 0;">
-              <div class="barcode-display-tag">
-                <i data-icon="barcode"></i>
-                <span id="heroBarcode" class="num-font">6221001001011</span>
-              </div>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 10px; color: var(--text-on-dark-muted); font-size: 0.95rem;">
+              <span>الكمية: <strong class="num" id="heroQty" style="color: var(--brand-amber); font-size: 1.15rem; font-weight: 700;">1 كيس</strong></span>
+              <span>•</span>
+              <span class="num" id="heroPrice" style="color: #FFFFFF; font-size: 1.15rem; font-weight: 700;">32.50 ج.م</span>
             </div>
 
-            <!-- Primary Buttons Inside Hero Card -->
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-              <button id="openScannerBtn" class="btn btn-primary">
-                <i data-icon="scan" class="icon-lg"></i>
-                <span>مسح الباركود بالكاميرا</span>
-              </button>
-              
-              <div style="display: flex; gap: 8px;">
-                <button id="outOfStockBtn" class="btn btn-danger-outline" style="flex: 1; padding: 12px;">
-                  <i data-icon="alert-circle"></i>
-                  <span>غير متوفر / بدائل</span>
-                </button>
+            <!-- Target Barcode Pill -->
+            <div style="margin: 18px auto 6px auto; display: inline-flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.4); padding: 8px 16px; border-radius: var(--radius-sm); border: 1px dashed rgba(245, 158, 11, 0.5);">
+              <i data-icon="barcode" class="icon-sm" style="color: var(--brand-amber);"></i>
+              <span id="heroBarcode" class="num" style="font-size: 1.05rem; letter-spacing: 1.5px; color: var(--brand-amber); font-weight: 600;">6221001001011</span>
+            </div>
+          </div>
 
-                <button id="simulateQuickScanBtn" class="btn btn-secondary" style="flex: 1; padding: 12px; font-size: 0.9rem;">
-                  <i data-icon="check-circle"></i>
-                  <span>محاكاة مسح الصنف</span>
-                </button>
-              </div>
+          <!-- Action Buttons Inside Hero Card -->
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 14px;">
+            <button id="openScannerBtn" class="btn-action btn-amber">
+              <i data-icon="scan" class="icon-md"></i>
+              <span>مسح الباركود بالكاميرا</span>
+            </button>
+            
+            <div style="display: flex; gap: 10px;">
+              <button id="outOfStockBtn" class="btn-action btn-soft-danger" style="flex: 1; padding: 12px; font-size: 0.88rem;">
+                <i data-icon="alert-circle" class="icon-sm"></i>
+                <span>غير متوفر / بدائل</span>
+              </button>
+
+              <button id="simulateQuickScanBtn" class="btn-action btn-soft" style="flex: 1; padding: 12px; font-size: 0.88rem; background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.1); color: #FFF;">
+                <i data-icon="check-circle" class="icon-sm" style="color: var(--status-success);"></i>
+                <span>محاكاة المسح</span>
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- ALL ITEMS PICKLIST (Ordered by Optimal Aisle Sequence) -->
+      <!-- ALL ITEMS ROUTE QUEUE -->
       <div>
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-          <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-white);">تسلسل مسار الأصناف (Aisle Route)</h3>
-          <span style="font-size: 0.78rem; color: var(--text-accent);">المسار الأقصر تلقائياً</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-primary);">تسلسل الأصناف في المسار</h3>
+          <span style="font-size: 0.75rem; color: var(--text-muted);">ترتيب الأرفف الأقرب</span>
         </div>
-        <div id="itemsListContainer" style="display: flex; flex-direction: column; gap: 8px;">
+        <div id="itemsListContainer" style="display: flex; flex-direction: column; gap: 10px;">
           <!-- Dynamically populated -->
         </div>
       </div>
 
-      <!-- ORDER COMPLETED / MASTER QR SECTION (Initially Hidden) -->
-      <div id="orderCompleteCard" class="card card-highlight" style="display: none; text-align: center; padding: 24px;">
-        <div style="width: 60px; height: 60px; background: rgba(16, 185, 129, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px auto; color: #10B981;">
-          <i data-icon="check-circle" class="icon-xl"></i>
+      <!-- ORDER COMPLETED / FAST-PASS MASTER QR -->
+      <div id="orderCompleteCard" class="card-white" style="display: none; text-align: center; padding: 32px 24px;">
+        <div style="width: 64px; height: 64px; background: var(--status-success-soft); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto; color: var(--status-success);">
+          <i data-icon="check-circle" class="icon-lg"></i>
         </div>
-        <h2 style="font-size: 1.3rem; font-weight: 700; color: #FFFFFF; margin-bottom: 6px;">اكتمل تجهيز الطلب بالكامل!</h2>
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
-          توجه مباشرة إلى نقطة الكاشير / التسليم دون تفريغ العربة
+        <h2 style="font-size: 1.35rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">اكتمل تجهيز الطلب بالكامل!</h2>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px;">
+          توجه فوراً إلى نقطة الكاشير؛ امسح هذا الكود لإصدار الفاتورة بدون تفريغ العربة
         </p>
 
-        <!-- Master Clearance QR Box -->
-        <div class="qr-container">
+        <div style="background: #FFFFFF; padding: 16px; border-radius: var(--radius-md); display: inline-block; box-shadow: var(--shadow-md); border: 1px solid var(--border-light);">
           <canvas id="masterQrCanvas" width="200" height="200"></canvas>
         </div>
-        <div class="num-font" style="font-weight: 700; color: var(--ink-black); background: var(--wheat); padding: 6px 14px; border-radius: var(--radius-sm); display: inline-block; margin-top: 8px;">
+
+        <div class="num" style="font-weight: 700; color: var(--text-primary); margin-top: 14px; font-size: 1.1rem;">
           كود التخليص: <span id="clearanceCodeText">ORD-101</span>
         </div>
       </div>
     </main>
 
-    <!-- SCANNER MODAL (Camera / Viewport) -->
-    <div id="scannerModal" class="modal-overlay">
-      <div class="modal-sheet">
-        <div class="modal-handle"></div>
-        <div style="display: flex; align-items: center; justify-content: space-between;">
+    <!-- FLOATING DOCK -->
+    <nav class="dock-nav">
+      <a href="/" class="dock-item">
+        <i data-icon="home" class="icon-md"></i>
+        <span>الرئيسية</span>
+      </a>
+      <a href="/picker.html" class="dock-item active">
+        <i data-icon="scan" class="icon-md"></i>
+        <span>العربة</span>
+      </a>
+      <a href="/customer.html" class="dock-item">
+        <i data-icon="clock" class="icon-md"></i>
+        <span>الطلب</span>
+      </a>
+      <a href="/cashier.html" class="dock-item">
+        <i data-icon="receipt" class="icon-md"></i>
+        <span>الكاشير</span>
+      </a>
+    </nav>
+
+    <!-- CAMERA SCANNER BOTTOM SHEET -->
+    <div id="scannerModal" class="sheet-overlay">
+      <div class="sheet-modal">
+        <div class="sheet-bar"></div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
           <div style="display: flex; align-items: center; gap: 8px;">
-            <i data-icon="scan" style="color: var(--burnt-orange);"></i>
-            <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-white);">قارئ الباركود الذكي</h3>
+            <i data-icon="scan" class="icon-md" style="color: var(--brand-amber);"></i>
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary);">قارئ الباركود الذكي</h3>
           </div>
           <button id="closeScannerBtn" style="background: none; border: none; color: var(--text-muted); cursor: pointer;">
-            <i data-icon="x" class="icon-lg"></i>
+            <i data-icon="x" class="icon-md"></i>
           </button>
         </div>
 
-        <!-- Video Camera Viewport -->
-        <div id="scannerViewportBox" class="scanner-viewport">
+        <div id="scannerViewportBox" class="scanner-box">
           <div id="reader" style="width: 100%; height: 100%;"></div>
         </div>
 
-        <p style="text-align: center; font-size: 0.82rem; color: var(--text-muted);">
-          وجه كاميرا الهاتف نحو باركود الصنف أو استخدم الماسح الليزري
+        <p style="text-align: center; font-size: 0.8rem; color: var(--text-muted);">
+          وجّه الكاميرا نحو باركود الصنف أو استخدم ماسح الليزر
         </p>
 
-        <!-- Manual input fallback -->
+        <!-- Manual Barcode Fallback -->
         <div style="display: flex; gap: 8px;">
-          <input type="text" id="manualBarcodeInput" placeholder="أدخل الباركود يدوياً إذا كان تالفاً" 
-                 class="num-font"
-                 style="flex: 1; padding: 12px; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #FFF; outline: none;">
-          <button id="manualBarcodeSubmit" class="btn btn-secondary" style="width: auto; padding: 12px 16px;">
-            <i data-icon="check-circle"></i>
+          <input type="text" id="manualBarcodeInput" placeholder="أدخل أرقام الباركود يدوياً" class="num"
+                 style="flex: 1; padding: 12px 14px; background: var(--bg-subtle); border: 1px solid var(--border-light); border-radius: var(--radius-sm); font-size: 0.95rem; outline: none;">
+          <button id="manualBarcodeSubmit" class="btn-action btn-dark" style="width: auto; padding: 12px 18px;">
+            <i data-icon="check-circle" class="icon-sm"></i>
           </button>
         </div>
       </div>
     </div>
 
-    <!-- SUBSTITUTION DRAWER (Non-Blocking) -->
-    <div id="subModal" class="modal-overlay">
-      <div class="modal-sheet">
-        <div class="modal-handle"></div>
-        <div style="display: flex; align-items: center; justify-content: space-between;">
+    <!-- SUBSTITUTION BOTTOM SHEET -->
+    <div id="subModal" class="sheet-overlay">
+      <div class="sheet-modal">
+        <div class="sheet-bar"></div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
           <div>
-            <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-white);">اقتراح بديل ذكي للعميل</h3>
-            <p style="font-size: 0.8rem; color: var(--text-muted);">لن يتوقف عملك، سيصل إشعار للعميل ومؤقت 3 دقائق</p>
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary);">اقتراح بديل ذكي</h3>
+            <p style="font-size: 0.78rem; color: var(--text-muted);">يُرسل فوراً للعميل مع مؤقت 3 دقائق دون توقف مسارك</p>
           </div>
           <button id="closeSubBtn" style="background: none; border: none; color: var(--text-muted); cursor: pointer;">
-            <i data-icon="x" class="icon-lg"></i>
+            <i data-icon="x" class="icon-md"></i>
           </button>
         </div>
 
@@ -196,9 +215,6 @@
     </div>
   </div>
 
-  <!-- QR Code Generator Library -->
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-  <!-- Scripts -->
   <script src="/js/icons.js"></script>
   <script src="/js/audio.js"></script>
   <script src="/js/scanner.js"></script>
@@ -208,7 +224,6 @@
     let currentOrder = null;
     let activeItem = null;
 
-    // Load initial order via AppDB (Supabase or Local)
     async function initOrder() {
       const order = await AppDB.getOrder('ORD-101');
       if (order) {
@@ -216,54 +231,35 @@
         renderOrderUI();
       }
 
-      // Subscribe to real-time updates
-      AppDB.subscribeOrder('ORD-101', (updatedOrder) => {
-        if (updatedOrder) {
-          currentOrder = updatedOrder;
+      AppDB.subscribeOrder('ORD-101', (updated) => {
+        if (updated) {
+          currentOrder = updated;
           renderOrderUI();
         }
       });
     }
     initOrder();
 
-    // Socket.io fallback support
+    // Socket.io fallback
     if (window.io) {
       window.socket = io();
       window.socket.emit('cart_identify', CART_ID);
 
-      window.socket.on('cart_synced', (data) => {
-        if (data.activeOrder && !AppDB.isSupabase()) {
-          currentOrder = data.activeOrder;
-          renderOrderUI();
-        }
-      });
-
       window.socket.on('order_updated', (updatedOrder) => {
-        if (!AppDB.isSupabase() && currentOrder && currentOrder.id === updatedOrder.id) {
+        if (!AppDB.isCloudActive() && currentOrder && currentOrder.id === updatedOrder.id) {
           currentOrder = updatedOrder;
           renderOrderUI();
         }
       });
 
-      window.socket.on('substitution_resolved', ({ subRequestId, decision, order }) => {
+      window.socket.on('substitution_resolved', ({ decision, order }) => {
         currentOrder = order;
         renderOrderUI();
         AudioFeedback.alert();
-        alert(decision === 'accepted' ? 'وافق العميل على البديل وسيتم تحديث المسار!' : 'رفض العميل البديل وتم إلغاء الصنف.');
-      });
-
-      window.socket.on('scan_result', (res) => {
-        if (res.success) {
-          AudioFeedback.success();
-          closeScanner();
-        } else {
-          AudioFeedback.warning();
-          alert(res.message);
-        }
+        alert(decision === 'accepted' ? 'وافق العميل على البديل وسيدرج بالمسار!' : 'رفض العميل البديل وتم إلغاء الصنف.');
       });
     }
 
-    // Render Full Order State
     function renderOrderUI() {
       if (!currentOrder) return;
 
@@ -278,16 +274,13 @@
       document.getElementById('progressText').innerText = `${pickedCount} / ${totalCount} صنف (${pct}%)`;
       document.getElementById('progressBar').style.width = `${pct}%`;
 
-      // Find first pending item according to optimal aisle sequence
       activeItem = items.find(i => i.status === 'pending');
 
       if (!activeItem && totalCount > 0) {
-        // All items picked!
         document.getElementById('activeItemSection').style.display = 'none';
         document.getElementById('orderCompleteCard').style.display = 'block';
         AudioFeedback.complete();
 
-        // Generate Master QR Code
         const canvas = document.getElementById('masterQrCanvas');
         if (window.QRCode && canvas) {
           QRCode.toCanvas(canvas, JSON.stringify({
@@ -301,7 +294,6 @@
         document.getElementById('activeItemSection').style.display = 'block';
         document.getElementById('orderCompleteCard').style.display = 'none';
 
-        // Update Hero Card
         document.getElementById('heroName').innerText = activeItem.name;
         document.getElementById('heroAisle').innerText = activeItem.aisle;
         document.getElementById('heroCategory').innerText = activeItem.category || 'عام';
@@ -310,7 +302,7 @@
         document.getElementById('heroBarcode').innerText = activeItem.barcode;
       }
 
-      // Render items sequence list
+      // Render Queue
       const listContainer = document.getElementById('itemsListContainer');
       listContainer.innerHTML = '';
       items.forEach((item) => {
@@ -318,36 +310,34 @@
         const isPicked = item.status === 'picked';
         const isOut = item.status === 'out_of_stock';
 
-        let badgeHtml = `<span class="badge badge-pending">في الانتظار</span>`;
-        let borderStyle = '1px solid var(--border-subtle)';
+        let badgeHtml = `<span class="badge-tag tag-neutral">في الانتظار</span>`;
+        let cardBg = 'card-white';
 
         if (isPicked) {
-          badgeHtml = `<span class="badge badge-picked"><i data-icon="check-circle"></i> تم التجميع</span>`;
-          borderStyle = '1px solid rgba(16, 185, 129, 0.3)';
+          badgeHtml = `<span class="badge-tag tag-success"><i data-icon="check-circle" class="icon-sm"></i> تم التجميع</span>`;
         } else if (isCurrent) {
-          badgeHtml = `<span class="badge" style="background: var(--burnt-orange); color: #FFF;">الصنف الحالي</span>`;
-          borderStyle = '2px solid var(--burnt-orange)';
+          badgeHtml = `<span class="badge-tag tag-amber">الصنف الحالي</span>`;
+          cardBg = 'card-white';
         } else if (isOut) {
-          badgeHtml = `<span class="badge badge-sub"><i data-icon="refresh"></i> بانتظار البديل</span>`;
+          badgeHtml = `<span class="badge-tag" style="background: var(--status-warning-soft); color: var(--status-warning);">بانتظار البديل</span>`;
         }
 
         const div = document.createElement('div');
-        div.className = 'card';
-        div.style.padding = '12px 14px';
-        div.style.border = borderStyle;
+        div.className = cardBg;
+        div.style.padding = '14px 18px';
         div.innerHTML = `
-          <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
-              <div style="font-size: 0.8rem; color: var(--wheat); margin-bottom: 2px;">
+              <div style="font-size: 0.78rem; color: var(--text-muted); font-weight: 500; margin-bottom: 2px;">
                 ${item.aisle}
               </div>
-              <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-white);">
+              <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary);">
                 ${item.name}
               </div>
             </div>
             <div style="text-align: left;">
               ${badgeHtml}
-              <div class="num-font" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
+              <div class="num" style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600; margin-top: 4px;">
                 ${item.requiredQty} ${item.unit || 'قطعة'}
               </div>
             </div>
@@ -359,7 +349,6 @@
       renderAllIcons(document);
     }
 
-    // Handle Barcode Scan Event via AppDB
     async function processBarcodeScan(barcode) {
       if (!currentOrder) return;
       const res = await AppDB.scanItem(currentOrder.id, barcode.trim());
@@ -376,21 +365,15 @@
       }
     }
 
-    // Initialize Hardware Scanner (USB/Bluetooth Guns)
-    BarcodeScanner.initHardware((code) => {
-      processBarcodeScan(code);
-    });
+    BarcodeScanner.initHardware((code) => processBarcodeScan(code));
 
-    // Scanner Modal UI
     const scannerModal = document.getElementById('scannerModal');
     const openScannerBtn = document.getElementById('openScannerBtn');
     const closeScannerBtn = document.getElementById('closeScannerBtn');
 
     openScannerBtn.addEventListener('click', () => {
       scannerModal.classList.add('active');
-      BarcodeScanner.startCamera('reader', (code) => {
-        processBarcodeScan(code);
-      });
+      BarcodeScanner.startCamera('reader', (code) => processBarcodeScan(code));
     });
 
     function closeScanner() {
@@ -399,14 +382,10 @@
     }
     closeScannerBtn.addEventListener('click', closeScanner);
 
-    // Simulate Quick Scan
     document.getElementById('simulateQuickScanBtn').addEventListener('click', () => {
-      if (activeItem) {
-        processBarcodeScan(activeItem.barcode);
-      }
+      if (activeItem) processBarcodeScan(activeItem.barcode);
     });
 
-    // Manual Barcode Input
     document.getElementById('manualBarcodeSubmit').addEventListener('click', () => {
       const val = document.getElementById('manualBarcodeInput').value;
       if (val) {
@@ -415,7 +394,6 @@
       }
     });
 
-    // Out of Stock & Substitution Handling
     const subModal = document.getElementById('subModal');
     const outOfStockBtn = document.getElementById('outOfStockBtn');
     const closeSubBtn = document.getElementById('closeSubBtn');
@@ -430,24 +408,23 @@
       container.innerHTML = '';
 
       if (subs.length === 0) {
-        container.innerHTML = `<p style="color: var(--text-muted); text-align: center;">لا توجد بدائل متاحة لهذا الصنف في نفس القسم.</p>`;
+        container.innerHTML = `<p style="color: var(--text-muted); text-align: center; padding: 20px;">لا توجد بدائل في نفس القسم.</p>`;
         return;
       }
 
       subs.slice(0, 3).forEach(sub => {
         const btn = document.createElement('div');
-        btn.className = 'card';
+        btn.className = 'card-white';
         btn.style.cursor = 'pointer';
-        btn.style.borderColor = 'rgba(239, 214, 172, 0.25)';
         btn.innerHTML = `
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
-              <div style="font-weight: 700; color: #FFF; font-size: 0.95rem;">${sub.name}</div>
-              <div style="font-size: 0.8rem; color: var(--wheat);">${sub.aisle}</div>
+              <div style="font-weight: 600; color: var(--text-primary); font-size: 0.95rem;">${sub.name}</div>
+              <div style="font-size: 0.78rem; color: var(--text-muted);">${sub.aisle}</div>
             </div>
             <div style="text-align: left;">
-              <div class="num-font" style="font-weight: 700; color: var(--wheat);">${sub.price.toFixed(2)} ج.م</div>
-              <span class="badge" style="background: var(--burnt-orange); color: #FFF; margin-top: 4px;">اقتراح هذا البديل</span>
+              <div class="num" style="font-weight: 700; color: var(--brand-amber);">${sub.price.toFixed(2)} ج.م</div>
+              <span class="badge-tag tag-amber" style="margin-top: 4px;">اقتراح هذا البديل</span>
             </div>
           </div>
         `;
@@ -455,15 +432,13 @@
           await AppDB.requestSubstitution(currentOrder.id, activeItem.id, sub);
           subModal.classList.remove('active');
           AudioFeedback.alert();
-          alert(`تم إرسال اقتراح (${sub.name}) للعميل بمؤقت 3 دقائق. يمكنك متابعة تجميع الأصناف الأخرى دون توقف.`);
+          alert(`تم إرسال اقتراح (${sub.name}) للعميل بمؤقت 3 دقائق. تابع تجميع الأصناف الأخرى دون توقف.`);
         });
         container.appendChild(btn);
       });
     });
 
-    closeSubBtn.addEventListener('click', () => {
-      subModal.classList.remove('active');
-    });
+    closeSubBtn.addEventListener('click', () => subModal.classList.remove('active'));
   </script>
 </body>
 </html>

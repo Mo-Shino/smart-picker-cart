@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>محطة الكاشير والتسليم | Smart Fast-Pass</title>
+  <title>بوابة الكاشير والتخليص السريع | KARTFLOW Fast-Pass</title>
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#04151F">
+  <meta name="theme-color" content="#12171E">
   <link rel="stylesheet" href="/css/style.css">
   
   <script src="/socket.io/socket.io.js"></script>
-  <!-- Firebase SDK (Official Google CDN) -->
+  <!-- Firebase Cloud SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="/config.js"></script>
@@ -17,110 +17,135 @@
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body>
-  <div class="app-container">
-    <!-- Top Header -->
-    <header class="top-header">
-      <div class="brand-badge">
-        <a href="/" style="color: var(--wheat); text-decoration: none; display: flex; align-items: center; justify-content: center;">
-          <i data-icon="arrow-right"></i>
+  <div class="device-shell">
+    <!-- Navbar -->
+    <header class="nav-header">
+      <div class="brand-meta">
+        <a href="/" style="width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--bg-surface); border: 1px solid var(--border-light); display: flex; align-items: center; justify-content: center; color: var(--text-primary); text-decoration: none;">
+          <i data-icon="arrow-right" class="icon-sm"></i>
         </a>
         <div>
-          <h1 class="brand-title">نقطة الكاشير السريع</h1>
-          <p class="brand-subtitle">محطة التخليص (Fast-Pass Gate)</p>
+          <h1 class="brand-name" style="font-size: 1.05rem;">نقطة التخليص السريع</h1>
+          <p class="brand-tag">بوابة الفحص الرقمي (Fast-Pass Gate)</p>
         </div>
       </div>
-      <div class="status-pill">
-        <div class="pulse-dot"></div>
-        <span>نقطة نشطة POS-01</span>
-      </div>
+      <div class="live-pill num">نقطة POS-01</div>
     </header>
 
     <!-- Main Content -->
-    <main class="main-content">
-      <!-- Fast-Pass QR Scanner Card -->
-      <div class="card card-highlight" style="text-align: center; padding: 20px;">
-        <div style="width: 52px; height: 52px; border-radius: var(--radius-sm); background: rgba(196, 73, 0, 0.15); display: flex; align-items: center; justify-content: center; margin: 0 auto 12px auto; color: var(--burnt-orange);">
-          <i data-icon="qrcode" class="icon-xl"></i>
+    <main class="content-body">
+      <!-- Master QR Scanner Trigger Card -->
+      <div class="card-white" style="text-align: center; padding: 28px 20px;">
+        <div style="width: 56px; height: 56px; border-radius: var(--radius-md); background: var(--brand-amber-soft); display: flex; align-items: center; justify-content: center; margin: 0 auto 14px auto; color: #92400E;">
+          <i data-icon="qrcode" class="icon-lg"></i>
         </div>
-        <h2 style="font-size: 1.25rem; font-weight: 700; color: #FFF; margin-bottom: 6px;">مسح رمز تخليص العربة (Master QR)</h2>
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
-          امسح الكود المعروض على شاشة العربة لاعتماد الطلب فوراً دون إعادة مسح المنتجات
+        <h2 style="font-size: 1.25rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">
+          فحص رمز العربة (Master QR)
+        </h2>
+        <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 20px;">
+          امسح الكود المعروض على شاشة العربة لإصدار الفاتورة وتجاوز طابور الكاشير فوراً
         </p>
 
-        <button id="openCashierScannerBtn" class="btn btn-primary" style="margin-bottom: 10px;">
-          <i data-icon="scan" class="icon-lg"></i>
+        <button id="openCashierScannerBtn" class="btn-action btn-amber" style="margin-bottom: 10px;">
+          <i data-icon="scan" class="icon-md"></i>
           <span>فتح الكاميرا لمسح Master QR</span>
         </button>
 
-        <button id="quickAuditActiveBtn" class="btn btn-secondary" style="font-size: 0.9rem;">
-          <i data-icon="shield-check"></i>
-          <span>استدعاء مباشر لأوردر العربة #01</span>
+        <button id="quickAuditActiveBtn" class="btn-action btn-soft" style="font-size: 0.88rem;">
+          <i data-icon="shield-check" class="icon-sm"></i>
+          <span>استدعاء فحص العربة #01</span>
         </button>
       </div>
 
-      <!-- AUDIT BREAKDOWN CARD (Visible when QR is scanned) -->
-      <div id="auditCard" class="card" style="display: none; border-color: rgba(16, 185, 129, 0.4);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px;">
-          <div>
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <span class="badge badge-picked num-font" id="auditOrderId">ORD-101</span>
-              <span class="badge badge-sub" id="auditCartId">العربة #01</span>
+      <!-- AUDIT BOARDING-PASS TICKET (Inspired by Flight Ticket Design) -->
+      <div id="auditCard" class="card-white" style="display: none; padding: 0; overflow: hidden; border-color: rgba(16, 185, 129, 0.4);">
+        <!-- Top Ticket Header -->
+        <div style="background: var(--bg-dark-card); padding: 20px 22px; color: #FFF;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                <span class="badge-tag tag-amber num" id="auditOrderId">ORD-101</span>
+                <span class="badge-tag" style="background: rgba(255,255,255,0.1); color: #FFF;" id="auditCartId">العربة #01</span>
+              </div>
+              <h3 style="font-size: 1.15rem; font-weight: 700; color: #FFF;" id="auditCustomerName">العميل: كريم محمود</h3>
             </div>
-            <div style="font-size: 0.85rem; color: var(--text-white); font-weight: 700; margin-top: 4px;" id="auditCustomerName">العميل: كريم محمود</div>
-          </div>
-          <div style="text-align: left;">
-            <div class="num-font" style="font-size: 1.35rem; font-weight: 700; color: var(--wheat);" id="auditTotal">185.00 ج.م</div>
-            <div style="font-size: 0.72rem; color: var(--text-muted);">تم التدقيق الرقمي بالباركود</div>
+            <div style="text-align: left;">
+              <div class="num" style="font-size: 1.45rem; font-weight: 800; color: var(--brand-amber);" id="auditTotal">185.00 ج.م</div>
+              <div style="font-size: 0.72rem; color: var(--text-on-dark-muted);">تم التدقيق الرقمي</div>
+            </div>
           </div>
         </div>
 
-        <!-- Verified Items Checklist -->
-        <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--wheat); margin-bottom: 8px;">مراجعة الأصناف المطابقة في العربة:</h4>
-        <div id="auditItemsList" style="display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; margin-bottom: 16px;">
-          <!-- Items inserted here -->
-        </div>
+        <!-- Perforated Ticket Dotted Line -->
+        <div style="height: 1px; border-top: 2px dashed var(--border-light); position: relative; margin: 0 16px;"></div>
 
-        <!-- Single Action Button to Dispatch -->
-        <button id="approveDispatchBtn" class="btn btn-primary" style="background: var(--success); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);">
-          <i data-icon="check-circle" class="icon-lg"></i>
-          <span>اعتماد الفاتورة وخروج الطلب للتسليم</span>
-        </button>
+        <!-- Verified Items Body -->
+        <div style="padding: 20px 22px;">
+          <h4 style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 12px;">الأصناف التي تم تدقيقها بالباركود:</h4>
+          <div id="auditItemsList" style="display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto; margin-bottom: 18px;">
+            <!-- Dynamic Items -->
+          </div>
+
+          <button id="approveDispatchBtn" class="btn-action" style="background: var(--status-success); color: #FFFFFF; box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);">
+            <i data-icon="check-circle" class="icon-md"></i>
+            <span>اعتماد الفاتورة وتصريح الخروج للتسليم</span>
+          </button>
+        </div>
       </div>
 
-      <!-- INVOICE SUCCESS MODAL -->
-      <div id="invoiceSuccessCard" class="card card-highlight" style="display: none; text-align: center; padding: 24px;">
-        <div style="color: #10B981; margin-bottom: 10px;">
-          <i data-icon="shield-check" class="icon-xl"></i>
+      <!-- INVOICE SUCCESS CARD -->
+      <div id="invoiceSuccessCard" class="card-white" style="display: none; text-align: center; padding: 32px 24px;">
+        <div style="width: 64px; height: 64px; background: var(--status-success-soft); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto; color: var(--status-success);">
+          <i data-icon="shield-check" class="icon-lg"></i>
         </div>
-        <h3 style="font-size: 1.25rem; font-weight: 700; color: #FFF; margin-bottom: 6px;">تم إنهاء وتسليم الطلب بنجاح!</h3>
-        <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 14px;">
-          تم إرسال الفاتورة الإلكترونية لهاتف العميل وتفريغ العربة للأوردر التالي
+        <h3 style="font-size: 1.3rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">تم إنهاء وتسليم الطلب بنجاح!</h3>
+        <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 18px;">
+          تم إرسال الفاتورة الإلكترونية للعميل وتفريغ العربة لبدء الأوردر التالي
         </p>
-        <button id="resetCashierBtn" class="btn btn-secondary">
-          <i data-icon="refresh"></i>
+        <button id="resetCashierBtn" class="btn-action btn-soft">
+          <i data-icon="refresh" class="icon-sm"></i>
           <span>استقبال عربة جديدة</span>
         </button>
       </div>
     </main>
 
+    <!-- FLOATING DOCK -->
+    <nav class="dock-nav">
+      <a href="/" class="dock-item">
+        <i data-icon="home" class="icon-md"></i>
+        <span>الرئيسية</span>
+      </a>
+      <a href="/picker.html" class="dock-item">
+        <i data-icon="scan" class="icon-md"></i>
+        <span>العربة</span>
+      </a>
+      <a href="/customer.html" class="dock-item">
+        <i data-icon="clock" class="icon-md"></i>
+        <span>الطلب</span>
+      </a>
+      <a href="/cashier.html" class="dock-item active">
+        <i data-icon="receipt" class="icon-md"></i>
+        <span>الكاشير</span>
+      </a>
+    </nav>
+
     <!-- SCANNER MODAL -->
-    <div id="cashierScannerModal" class="modal-overlay">
-      <div class="modal-sheet">
-        <div class="modal-handle"></div>
-        <div style="display: flex; align-items: center; justify-content: space-between;">
-          <h3 style="font-size: 1.1rem; font-weight: 700; color: #FFF;">مسح Master QR الخاص بالعربة</h3>
+    <div id="cashierScannerModal" class="sheet-overlay">
+      <div class="sheet-modal">
+        <div class="sheet-bar"></div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary);">مسح Master QR للعربة</h3>
           <button id="closeCashierScanBtn" style="background: none; border: none; color: var(--text-muted); cursor: pointer;">
-            <i data-icon="x" class="icon-lg"></i>
+            <i data-icon="x" class="icon-md"></i>
           </button>
         </div>
-        <div id="cashierScannerViewport" class="scanner-viewport">
+        <div id="cashierScannerViewport" class="scanner-box">
           <div id="cashierReader" style="width: 100%; height: 100%;"></div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Scripts -->
   <script src="/js/icons.js"></script>
   <script src="/js/audio.js"></script>
   <script src="/js/scanner.js"></script>
@@ -128,17 +153,15 @@
   <script>
     let currentAuditedOrder = null;
 
-    // Direct audit of default active order via AppDB
     document.getElementById('quickAuditActiveBtn').addEventListener('click', async () => {
       const ord = await AppDB.getOrder('ORD-101');
       if (ord) {
         displayAudit(ord);
       } else {
-        alert('لا يوجد أوردر نشط حالياً على العربة.');
+        alert('لا يوجد أوردر نشط حالياً.');
       }
     });
 
-    // Scanner Modal
     const cashierModal = document.getElementById('cashierScannerModal');
     const openScannerBtn = document.getElementById('openCashierScannerBtn');
     const closeScannerBtn = document.getElementById('closeCashierScanBtn');
@@ -169,7 +192,7 @@
         displayAudit(order);
         AudioFeedback.success();
       } else {
-        alert('تعذر العثور على أوردر مرتبط بهذا الرمز.');
+        alert('تعذر العثور على أوردر بهذا الرمز.');
       }
     }
 
@@ -188,15 +211,15 @@
         row.style.display = 'flex';
         row.style.justifyContent = 'space-between';
         row.style.alignItems = 'center';
-        row.style.padding = '8px 10px';
-        row.style.background = 'rgba(0,0,0,0.2)';
+        row.style.padding = '8px 12px';
+        row.style.background = 'var(--bg-subtle)';
         row.style.borderRadius = 'var(--radius-sm)';
         row.innerHTML = `
           <div style="display: flex; align-items: center; gap: 8px;">
-            <i data-icon="check-circle" style="color: #10B981;"></i>
-            <span style="font-size: 0.88rem; color: #FFF; font-weight: 500;">${it.name}</span>
+            <i data-icon="check-circle" class="icon-sm" style="color: var(--status-success);"></i>
+            <span style="font-size: 0.88rem; color: var(--text-primary); font-weight: 500;">${it.name}</span>
           </div>
-          <div class="num-font" style="font-size: 0.85rem; color: var(--wheat); font-weight: 700;">
+          <div class="num" style="font-size: 0.85rem; color: var(--brand-amber); font-weight: 700;">
             ${it.requiredQty} ${it.unit || 'قطعة'}
           </div>
         `;
@@ -208,7 +231,6 @@
       renderAllIcons(document);
     }
 
-    // Approve & Dispatch via AppDB
     document.getElementById('approveDispatchBtn').addEventListener('click', async () => {
       if (!currentAuditedOrder) return;
 
@@ -227,8 +249,6 @@
           AudioFeedback.complete();
           document.getElementById('auditCard').style.display = 'none';
           document.getElementById('invoiceSuccessCard').style.display = 'block';
-        } else {
-          alert(res.message);
         }
       });
     }

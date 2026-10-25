@@ -3,353 +3,185 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>العربة الذكية | Smart Picker Cart</title>
+  <title>KARTFLOW | كارت فلو - نظام التجهيز الذكي</title>
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#04151F">
+  <meta name="theme-color" content="#12171E">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="عربة التجميع">
-  <link rel="apple-touch-icon" href="/icons/icon-192.png">
   <link rel="stylesheet" href="/css/style.css">
   
-  <!-- Firebase SDK (Official Google CDN) -->
+  <!-- Firebase Cloud SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="/config.js"></script>
   <script src="/js/db.js"></script>
 </head>
 <body>
-  <div class="app-container">
-    <!-- Top Header -->
-    <header class="top-header">
-      <div class="brand-badge">
-        <div class="brand-logo-icon">
-          <i data-icon="cart"></i>
+  <div class="device-shell">
+    <!-- Navbar -->
+    <header class="nav-header">
+      <div class="brand-meta">
+        <div class="brand-icon-box">
+          <i data-icon="cart" class="icon-md"></i>
         </div>
         <div>
-          <h1 class="brand-title">العربة الذكية</h1>
-          <p class="brand-subtitle">Smart Picker System</p>
+          <h1 class="brand-name">KARTFLOW</h1>
+          <p class="brand-tag">منظومة التجهيز الذكي</p>
         </div>
       </div>
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <button id="openConfigBtn" style="background: rgba(239, 214, 172, 0.1); border: 1px solid var(--border-subtle); color: var(--wheat); padding: 6px 10px; border-radius: var(--radius-sm); cursor: pointer; display: flex; align-items: center; gap: 4px; font-size: 0.75rem;">
-          <i data-icon="sparkles"></i>
-          <span id="cloudStatusLabel">السحابة</span>
-        </button>
-        <div class="status-pill">
-          <div class="pulse-dot"></div>
-          <span id="connectionBadge">نشط</span>
-        </div>
+      <div class="live-pill">
+        <div class="live-dot"></div>
+        <span>الخدمة نشطة</span>
       </div>
     </header>
 
     <!-- Main Content -->
-    <main class="main-content">
-      <!-- PWA Install Banner -->
-      <div id="pwaBanner" class="pwa-install-banner" style="display: none;">
-        <div>
-          <div class="pwa-text" style="font-weight: 700; color: var(--wheat); margin-bottom: 2px;">تثبيت كتطبيق موبايل</div>
-          <div class="pwa-text" style="font-size: 0.78rem; color: var(--text-muted);">شاشة كاملة وتجربة تطبيق أصلي بدون متصفح</div>
+    <main class="content-body">
+      <!-- Operations Metrics Overview (Inspired by Modern Executive Dashboards) -->
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+        <div class="card-white" style="padding: 14px 10px; text-align: center;">
+          <div class="num" style="font-size: 1.4rem; font-weight: 800; color: var(--brand-amber);">03</div>
+          <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 500; margin-top: 2px;">عربات نشطة</div>
         </div>
-        <button id="pwaInstallBtn" class="btn-install">
-          تثبيت الآن
-        </button>
-      </div>
-
-      <!-- Cloud / Vercel Readiness Card -->
-      <div class="card card-highlight">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <i data-icon="sparkles" style="color: var(--burnt-orange);"></i>
-            <span style="font-weight: 700; font-size: 0.95rem;">جاهز للرفع على Vercel و Firebase</span>
-          </div>
-          <span id="activeModeBadge" class="badge badge-picked num-font">VERCEL READY</span>
+        <div class="card-white" style="padding: 14px 10px; text-align: center;">
+          <div class="num" style="font-size: 1.4rem; font-weight: 800; color: var(--brand-forest);">4.2m</div>
+          <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 500; margin-top: 2px;">متوسط التجميع</div>
         </div>
-        <p style="font-size: 0.84rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px;">
-          المشروع مهيأ بالكامل ليعمل مجاناً 100% مع <strong style="color: var(--wheat);">Google Firebase</strong> و <strong style="color: var(--wheat);">Vercel</strong> مع تزامن لحظي فائق السرعة بدون أي مصاريف أو حدود مغلقة.
-        </p>
-        <div style="display: flex; gap: 8px;">
-          <button id="setupFirebaseBtn" class="btn btn-secondary" style="flex: 1; padding: 10px; font-size: 0.85rem;">
-            <i data-icon="shield-check"></i>
-            <span>ربط سحابة Firebase</span>
-          </button>
-          <a href="#wifiInfo" id="toggleWifiBtn" class="btn btn-secondary" style="flex: 1; padding: 10px; font-size: 0.85rem; text-decoration: none;">
-            <i data-icon="wifi"></i>
-            <span>عنوان الواي فاي المحلي</span>
-          </a>
+        <div class="card-white" style="padding: 14px 10px; text-align: center;">
+          <div class="num" style="font-size: 1.4rem; font-weight: 800; color: var(--status-success);">99.8%</div>
+          <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 500; margin-top: 2px;">دقة الأوردرات</div>
         </div>
       </div>
 
-      <!-- Wi-Fi Network Box (Collapsible/Visible) -->
-      <div id="wifiBoxContainer" class="card" style="display: none; padding: 14px; background: rgba(0,0,0,0.3);">
-        <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 8px;">
-          للتشغيل المحلي عبر شبكة الواي فاي المنزلية قبل الرفع السحابي:
-        </p>
-        <div id="networkIpBox" class="barcode-display-tag num-font" style="width: 100%; justify-content: center; font-size: 1rem; padding: 8px; background: rgba(0,0,0,0.5);">
-          http://localhost:3000
-        </div>
-      </div>
-
-      <!-- Roles Selection Header -->
+      <!-- Section Title -->
       <div style="margin-top: 4px;">
-        <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--text-white); margin-bottom: 4px;">اختر واجهة الاستخدام</h2>
-        <p style="font-size: 0.82rem; color: var(--text-muted);">جميع الشاشات مرتبطة معاً في الوقت الفعلي</p>
+        <h2 style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary); margin-bottom: 2px;">اختر محطة العمل</h2>
+        <p style="font-size: 0.8rem; color: var(--text-muted);">نظام متكامل يربط العربة بالعميل والكاشير لحظياً</p>
       </div>
 
-      <!-- Role 1: Picker Cart Station -->
-      <div class="card" style="border-right: 4px solid var(--burnt-orange);">
-        <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px;">
+      <!-- Role 1: Smart Picker Workstation (Dark Contrast Card) -->
+      <div class="card-dark" style="position: relative; cursor: pointer;" onclick="location.href='/picker.html'">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px;">
           <div>
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-              <span class="badge" style="background: rgba(196, 73, 0, 0.2); color: var(--burnt-orange); border: 1px solid var(--border-highlight);">
-                محطة العمل المتنقلة
-              </span>
-            </div>
-            <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--text-white);">عربة التجميع الذكية</h3>
+            <span class="badge-tag tag-amber" style="margin-bottom: 8px;">
+              <i data-icon="scan" class="icon-sm"></i>
+              <span>محطة المُحضّر</span>
+            </span>
+            <h3 style="font-size: 1.35rem; font-weight: 700; color: #FFFFFF;">عربة التجميع الذكية</h3>
+            <p style="font-size: 0.82rem; color: var(--text-on-dark-muted); margin-top: 4px;">
+              توجيه الممرات بالمسار الأقصر ومسح الباركود التلقائي
+            </p>
           </div>
-          <div style="width: 44px; height: 44px; border-radius: var(--radius-sm); background: rgba(196, 73, 0, 0.15); display: flex; align-items: center; justify-content: center; color: var(--burnt-orange);">
+          <div style="width: 48px; height: 48px; border-radius: var(--radius-sm); background: rgba(255, 255, 255, 0.08); display: flex; align-items: center; justify-content: center; color: var(--brand-amber);">
             <i data-icon="scan" class="icon-lg"></i>
           </div>
         </div>
-        
-        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;">
-          <span class="badge badge-sub"><i data-icon="barcode"></i> مسح باركود فوري</span>
-          <span class="badge badge-sub"><i data-icon="map-pin"></i> المسار الأقصر</span>
-          <span class="badge badge-sub"><i data-icon="refresh"></i> بدائل غير معطلة</span>
+
+        <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+          <span class="badge-tag" style="background: rgba(255,255,255,0.06); color: var(--text-on-dark-muted);">
+            <i data-icon="barcode" class="icon-sm"></i> باركود فوري
+          </span>
+          <span class="badge-tag" style="background: rgba(255,255,255,0.06); color: var(--text-on-dark-muted);">
+            <i data-icon="map-pin" class="icon-sm"></i> المسار الذكي
+          </span>
         </div>
 
-        <a href="/picker.html" class="btn btn-primary" style="text-decoration: none;">
+        <a href="/picker.html" class="btn-action btn-amber" style="margin-top: 4px;">
           <i data-icon="cart"></i>
           <span>فتح شاشة العربة</span>
         </a>
       </div>
 
-      <!-- Role 2: Customer Live Tracking -->
-      <div class="card" style="border-right: 4px solid #3B82F6;">
-        <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px;">
+      <!-- Role 2: Customer Live Journey (Crisp White Card) -->
+      <div class="card-white" style="position: relative; cursor: pointer;" onclick="location.href='/customer.html'">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px;">
           <div>
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-              <span class="badge" style="background: rgba(59, 130, 246, 0.2); color: #60A5FA; border: 1px solid rgba(59, 130, 246, 0.3);">
-                تطبيق العميل
-              </span>
-            </div>
-            <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--text-white);">متابعة وتجهيز الطلب</h3>
+            <span class="badge-tag tag-forest" style="margin-bottom: 8px;">
+              <i data-icon="smartphone" class="icon-sm"></i>
+              <span>تطبيق المتابعة</span>
+            </span>
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text-primary);">تتبع طلب العميل</h3>
+            <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 4px;">
+              متابعة كل صنف لحظة بلحظة واعتماد البدائل بلمسة واحدة
+            </p>
           </div>
-          <div style="width: 44px; height: 44px; border-radius: var(--radius-sm); background: rgba(59, 130, 246, 0.15); display: flex; align-items: center; justify-content: center; color: #60A5FA;">
+          <div style="width: 48px; height: 48px; border-radius: var(--radius-sm); background: var(--brand-forest-soft); display: flex; align-items: center; justify-content: center; color: var(--brand-forest);">
             <i data-icon="smartphone" class="icon-lg"></i>
           </div>
         </div>
 
-        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;">
-          <span class="badge badge-sub"><i data-icon="clock"></i> تتبع مباشر لحظياً</span>
-          <span class="badge badge-sub"><i data-icon="shield-check"></i> اعتماد البدائل</span>
-          <span class="badge badge-sub"><i data-icon="receipt"></i> فاتورة إلكترونية</span>
+        <!-- Mini Live Stepper Preview -->
+        <div class="aisle-stepper" style="margin: 16px 0;">
+          <div class="aisle-step">
+            <div class="step-circle completed"><i data-icon="check-circle" class="icon-sm"></i></div>
+            <span class="step-label">استلام</span>
+          </div>
+          <div class="aisle-step">
+            <div class="step-circle active"><i data-icon="clock" class="icon-sm"></i></div>
+            <span class="step-label" style="color: var(--brand-amber); font-weight: 700;">التجميع</span>
+          </div>
+          <div class="aisle-step">
+            <div class="step-circle">3</div>
+            <span class="step-label">التسليم</span>
+          </div>
+          <div class="stepper-track"></div>
         </div>
 
-        <a href="/customer.html" class="btn btn-secondary" style="text-decoration: none; border-color: rgba(59, 130, 246, 0.4);">
-          <i data-icon="smartphone"></i>
-          <span>فتح تطبيق العميل</span>
+        <a href="/customer.html" class="btn-action btn-dark" style="margin-top: 6px;">
+          <i data-icon="clock"></i>
+          <span>فتح شاشة المتابعة الحية</span>
         </a>
       </div>
 
-      <!-- Role 3: Cashier Fast Pass Station -->
-      <div class="card" style="border-right: 4px solid var(--wheat);">
-        <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px;">
+      <!-- Role 3: Cashier Fast-Pass Clearance -->
+      <div class="card-white" style="position: relative; cursor: pointer;" onclick="location.href='/cashier.html'">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
           <div>
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-              <span class="badge" style="background: rgba(239, 214, 172, 0.2); color: var(--wheat); border: 1px solid var(--border-subtle);">
-                نقطة الخروج السريع
-              </span>
-            </div>
-            <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--text-white);">الكاشير والتسليم</h3>
+            <span class="badge-tag tag-neutral" style="margin-bottom: 8px;">
+              <i data-icon="qrcode" class="icon-sm"></i>
+              <span>نقطة الخروج السريع</span>
+            </span>
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text-primary);">الكاشير والتسليم</h3>
+            <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 4px;">
+              مسح Master QR للعربة وإصدار الفاتورة وتجاوز الطوابير
+            </p>
           </div>
-          <div style="width: 44px; height: 44px; border-radius: var(--radius-sm); background: rgba(239, 214, 172, 0.15); display: flex; align-items: center; justify-content: center; color: var(--wheat);">
-            <i data-icon="qrcode" class="icon-lg"></i>
+          <div style="width: 48px; height: 48px; border-radius: var(--radius-sm); background: var(--bg-subtle); display: flex; align-items: center; justify-content: center; color: var(--text-primary); border: 1px solid var(--border-light);">
+            <i data-icon="receipt" class="icon-lg"></i>
           </div>
         </div>
 
-        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;">
-          <span class="badge badge-sub"><i data-icon="qrcode"></i> مسح Master QR</span>
-          <span class="badge badge-sub"><i data-icon="check-circle"></i> تجاوز الطابور</span>
-        </div>
-
-        <a href="/cashier.html" class="btn btn-secondary" style="text-decoration: none;">
+        <a href="/cashier.html" class="btn-action btn-soft" style="margin-top: 4px;">
           <i data-icon="qrcode"></i>
           <span>فتح محطة الكاشير</span>
         </a>
       </div>
     </main>
 
-    <!-- FIREBASE CONFIGURATION MODAL -->
-    <div id="configModal" class="modal-overlay">
-      <div class="modal-sheet">
-        <div class="modal-handle"></div>
-        <div style="display: flex; align-items: center; justify-content: space-between;">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <i data-icon="sparkles" style="color: var(--burnt-orange);"></i>
-            <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-white);">إعدادات سحابة Firebase</h3>
-          </div>
-          <button id="closeConfigBtn" style="background: none; border: none; color: var(--text-muted); cursor: pointer;">
-            <i data-icon="x" class="icon-lg"></i>
-          </button>
-        </div>
-
-        <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
-          الصق هنا كود الـ <strong style="color: var(--wheat);">firebaseConfig</strong> من Firebase Console لتفعيل البث المباشر المجاني في ثوانٍ:
-        </p>
-
-        <div>
-          <label style="font-size: 0.8rem; color: var(--wheat); font-weight: 600; display: block; margin-bottom: 4px;">Firebase Config (الصق الكائن أو الـ JSON هنا):</label>
-          <textarea id="firebaseConfigTextarea" rows="6" placeholder='{
-  "apiKey": "AIzaSy...",
-  "authDomain": "myproject.firebaseapp.com",
-  "projectId": "myproject",
-  "storageBucket": "myproject.appspot.com",
-  "messagingSenderId": "123456",
-  "appId": "1:123456:web:abcd"
-}' class="num-font"
-          style="width: 100%; padding: 12px; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #FFF; outline: none; font-size: 0.85rem; font-family: monospace; resize: none;"></textarea>
-        </div>
-
-        <div style="display: flex; gap: 8px; margin-top: 6px;">
-          <button id="saveFirebaseBtn" class="btn btn-primary" style="flex: 2; padding: 12px;">
-            <i data-icon="check-circle"></i>
-            <span>حفظ والاتصال بـ Firebase</span>
-          </button>
-          <button id="clearFirebaseBtn" class="btn btn-danger-outline" style="flex: 1; padding: 12px; font-size: 0.85rem;">
-            <span>استخدام المحلي</span>
-          </button>
-        </div>
-      </div>
-    </div>
+    <!-- Floating Bottom Navigation Dock -->
+    <nav class="dock-nav">
+      <a href="/" class="dock-item active">
+        <i data-icon="home" class="icon-md"></i>
+        <span>الرئيسية</span>
+      </a>
+      <a href="/picker.html" class="dock-item">
+        <i data-icon="scan" class="icon-md"></i>
+        <span>العربة</span>
+      </a>
+      <a href="/picker.html" class="dock-center-btn" title="مسح باركود">
+        <i data-icon="barcode" class="icon-lg"></i>
+      </a>
+      <a href="/customer.html" class="dock-item">
+        <i data-icon="clock" class="icon-md"></i>
+        <span>الطلب</span>
+      </a>
+      <a href="/cashier.html" class="dock-item">
+        <i data-icon="receipt" class="icon-md"></i>
+        <span>الكاشير</span>
+      </a>
+    </nav>
   </div>
 
-  <!-- Scripts -->
   <script src="/js/icons.js"></script>
-  <script>
-    // Firebase Cloud Configuration Modal Controller
-    const configModal = document.getElementById('configModal');
-    const openConfigBtn = document.getElementById('openConfigBtn');
-    const closeConfigBtn = document.getElementById('closeConfigBtn');
-    const setupFirebaseBtn = document.getElementById('setupFirebaseBtn');
-    const saveFirebaseBtn = document.getElementById('saveFirebaseBtn');
-    const clearFirebaseBtn = document.getElementById('clearFirebaseBtn');
-    const configTextarea = document.getElementById('firebaseConfigTextarea');
-    const cloudStatusLabel = document.getElementById('cloudStatusLabel');
-
-    // Populate existing
-    const saved = localStorage.getItem('SP_FIREBASE_CONFIG');
-    if (saved) {
-      configTextarea.value = saved;
-    }
-
-    if (AppDB.isCloudActive()) {
-      cloudStatusLabel.innerText = 'Firebase متصل';
-      cloudStatusLabel.style.color = '#34D399';
-      document.getElementById('activeModeBadge').innerText = 'FIREBASE CLOUD';
-    } else {
-      cloudStatusLabel.innerText = 'محلي / Local';
-    }
-
-    const openModal = () => configModal.classList.add('active');
-    const closeModal = () => configModal.classList.remove('active');
-
-    openConfigBtn.addEventListener('click', openModal);
-    setupFirebaseBtn.addEventListener('click', openModal);
-    closeConfigBtn.addEventListener('click', closeModal);
-
-    saveFirebaseBtn.addEventListener('click', () => {
-      let raw = configTextarea.value.trim();
-      if (!raw) {
-        alert('يرجى لصق إعدادات Firebase أولاً.');
-        return;
-      }
-      // If user pasted const firebaseConfig = { ... }; clean it up
-      if (raw.includes('=')) {
-        raw = raw.substring(raw.indexOf('=') + 1).replace(/;$/, '').trim();
-      }
-      try {
-        // Parse loose JS object or JSON
-        let parsed = null;
-        try {
-          parsed = JSON.parse(raw);
-        } catch (e) {
-          // Eval loose JS object safely
-          parsed = Function('"use strict"; return (' + raw + ')')();
-        }
-
-        if (parsed && parsed.apiKey && parsed.projectId) {
-          localStorage.setItem('SP_FIREBASE_CONFIG', JSON.stringify(parsed));
-          alert('تم حفظ إعدادات Firebase بنجاح! سيتم إعادة تحميل الصفحة للاتصال بالسحابة.');
-          window.location.reload();
-        } else {
-          alert('الكود الملصق لا يحتوي على apiKey أو projectId صالحين.');
-        }
-      } catch (err) {
-        alert('خطأ في قراءة كود Firebase، يرجى التأكد من نسخه بدقة.');
-      }
-    });
-
-    clearFirebaseBtn.addEventListener('click', () => {
-      localStorage.removeItem('SP_FIREBASE_CONFIG');
-      alert('تم الرجوع للوضع المحلي.');
-      window.location.reload();
-    });
-
-    // Toggle Wi-Fi Info
-    const toggleWifiBtn = document.getElementById('toggleWifiBtn');
-    const wifiBox = document.getElementById('wifiBoxContainer');
-    toggleWifiBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      wifiBox.style.display = wifiBox.style.display === 'none' ? 'block' : 'none';
-    });
-
-    // Fetch Server Network IPs
-    fetch('/api/info')
-      .then(res => res.json())
-      .then(data => {
-        const ipBox = document.getElementById('networkIpBox');
-        if (data.localIps && data.localIps.length > 0) {
-          ipBox.innerHTML = `http://${data.localIps[0]}:${data.port}`;
-        } else {
-          ipBox.innerHTML = `http://localhost:${data.port}`;
-        }
-      })
-      .catch(() => {
-        document.getElementById('networkIpBox').innerHTML = window.location.origin;
-      });
-
-    // PWA Service Worker Registration & Installation Prompt
-    let deferredPrompt = null;
-    const pwaBanner = document.getElementById('pwaBanner');
-    const pwaInstallBtn = document.getElementById('pwaInstallBtn');
-
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW reg error:', err));
-      });
-    }
-
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      if (pwaBanner) pwaBanner.style.display = 'flex';
-    });
-
-    if (pwaInstallBtn) {
-      pwaInstallBtn.addEventListener('click', async () => {
-        if (!deferredPrompt) {
-          alert('لتثبيت التطبيق على آيفون:\nاضغط زر المشاركة (Share) في Safari ثم اختر "إضافة إلى الشاشة الرئيسية (Add to Home Screen)".');
-          return;
-        }
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') {
-          pwaBanner.style.display = 'none';
-        }
-        deferredPrompt = null;
-      });
-    }
-  </script>
 </body>
 </html>
