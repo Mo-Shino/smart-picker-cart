@@ -1,13 +1,19 @@
-const CACHE_NAME = 'smart-picker-cart-v1';
+const CACHE_NAME = 'kartflow-v2';
 const ASSETS = [
   '/',
   '/index.html',
   '/picker.html',
   '/customer.html',
   '/cashier.html',
+  '/manager.html',
   '/css/style.css',
+  '/config.js',
   '/js/icons.js',
-  '/js/audio.js',
+  '/js/catalog.js',
+  '/js/logic.js',
+  '/js/db.js',
+  '/js/shell.js',
+  '/js/scanner.js',
   '/manifest.json'
 ];
 
