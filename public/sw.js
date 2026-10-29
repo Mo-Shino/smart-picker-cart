@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kartflow-v8';
+const CACHE_NAME = 'kartflow-v9';
 const ASSETS = [
   '/',
   '/index.html',
@@ -14,6 +14,10 @@ const ASSETS = [
   '/js/db.js',
   '/js/shell.js',
   '/js/scanner.js',
+  '/js/qrcode.min.js',
+  '/icons/icon.svg',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
   '/manifest.json'
 ];
 

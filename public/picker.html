@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>عربة التجميع | KartFlow</title>
   <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
   <meta name="theme-color" content="#1E4A44">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -22,7 +25,7 @@
   <script src="/js/shell.js"></script>
   <script src="/js/scanner.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="/js/qrcode.min.js"></script>
 </head>
 <body>
   <div class="app" id="app">
@@ -37,7 +40,7 @@
 
           <div class="row between" style="margin-bottom: 10px;">
             <span style="font-size: 13.5px; font-weight: 600;">تقدّم الجولة</span>
-            <b class="num gold" id="routeNum" style="font-size: 14px;">0 / 0</b>
+            <b class="num gold" id="routeNum" style="font-size: 14px; direction: rtl; unicode-bidi: isolate;">0 من 0</b>
           </div>
           <div class="bar"><i id="routeBar" style="--p: 0;"></i></div>
         </div>
@@ -117,10 +120,11 @@
         const route = Logic.route(cartOrders);
         const total = cartOrders.reduce((s, o) => s + Logic.liveItems(o).length, 0);
         const done = cartOrders.reduce((s, o) => s + Logic.liveItems(o).filter(i => i.status === 'picked').length, 0);
-        const pct = total ? Math.round(done / total * 100) : 0;
+        const isFinished = !route.length && cartOrders.length > 0;
+        const pct = isFinished ? 100 : (total ? Math.round(done / total * 100) : 0);
 
         document.getElementById('ordersBadge').textContent = `${cartOrders.length} طلب`;
-        document.getElementById('routeNum').textContent = `${done} / ${total}`;
+        document.getElementById('routeNum').textContent = isFinished ? `${total} من ${total}` : `${done} من ${total}`;
         document.getElementById('routeBar').style.setProperty('--p', pct);
         document.getElementById('remainTxt').textContent = Math.max(0, route.length - 1);
         document.getElementById('ordersCount').textContent = cartOrders.length;
@@ -154,16 +158,31 @@
             return;
           }
           wrap.innerHTML = `
-            <div class="card ink center glow" style="padding: 28px 20px;">
+            <div class="card ink center glow qr-finish-card" style="padding: 28px 20px;">
               <div class="check-draw"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
               <h2 class="t-h1" style="margin-bottom: 4px;">اكتمل التجميع</h2>
-              <p class="muted" style="margin-bottom: 20px; font-size: 14px;">اعرض الرمز عند الكاشير</p>
-              <div style="background:#fff; padding:14px; border-radius:20px; display:inline-block; box-shadow: var(--shadow-2); animation: pop .7s .2s var(--spring) both;"><canvas id="qr"></canvas></div>
+              <p class="muted" style="margin-bottom: 18px; font-size: 14px;">اعرض الرمز عند الكاشير</p>
+              <div class="qr-box">
+                <canvas id="qr" width="180" height="180"></canvas>
+              </div>
+              <div class="qr-caption num">
+                <span>عربة 01</span>
+                <span class="dot"></span>
+                <span>${cartOrders.map(o => o.id).join(' · ')}</span>
+              </div>
             </div>`;
           setTimeout(() => {
             const c = document.getElementById('qr');
-            if (c && window.QRCode) QRCode.toCanvas(c, JSON.stringify({ cart: CART_ID, orders: cartOrders.map(o => o.id) }), { width: 168, margin: 1 });
-          }, 60);
+            if (c && window.QRCode) {
+              QRCode.toCanvas(c, JSON.stringify({ cart: CART_ID, orders: cartOrders.map(o => o.id) }), {
+                width: 180,
+                margin: 1,
+                color: { dark: '#0A1D1B', light: '#FFFFFF' }
+              }, err => {
+                if (err) console.error('QR code generation error:', err);
+              });
+            }
+          }, 50);
           return;
         }
 
