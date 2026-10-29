@@ -101,10 +101,7 @@
     document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('brandLogo').innerHTML = Logo(40, true);
       document.getElementById('splashLogo').innerHTML = Logo(88, true);
-      document.getElementById('cartArtWrap').innerHTML = `
-        <div class="welcome-emblem">
-          ${Logo(104, true)}
-        </div>`;
+      document.getElementById('cartArtWrap').innerHTML = Art.cart(true, 'welcome-art');
       Icons.mount();
       AppDB.seedIfEmpty().catch(() => {});
 

@@ -421,24 +421,6 @@ body.dark .dock-pill { background: #12312D; }
 html.no-splash .splash { display: none; }
 .logo-draw path, .logo-draw line { stroke-dasharray: 80; stroke-dashoffset: 80; animation: draw 1.2s .2s var(--ease) forwards; }
 
-.welcome-emblem {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin: 14px auto 4px;
-  position: relative;
-  filter: drop-shadow(0 14px 28px rgba(10, 29, 27, 0.55));
-  animation: floaty 5.5s ease-in-out infinite;
-}
-.welcome-emblem::after {
-  content: '';
-  position: absolute;
-  inset: -14px;
-  border-radius: 40px;
-  background: radial-gradient(circle, rgba(232, 176, 58, 0.22) 0%, transparent 72%);
-  z-index: -1;
-  pointer-events: none;
-}
 
 /* QR code modal card */
 .qr-box {
