@@ -29,7 +29,13 @@
           <div class="topbar">
             <a href="/" class="icon-btn sm" aria-label="الرئيسية"><i data-icon="chevron-right" data-size="20"></i></a>
             <div class="ttl"><b id="hdName">طلبي</b><small class="num" id="hdId">—</small></div>
-            <button class="icon-btn sm" id="switchBtn" aria-label="تبديل الطلب"><i data-icon="swap" data-size="18"></i></button>
+            <div class="row-sm" style="gap: 8px;">
+              <button class="btn btn-gold sm shine" id="newOrderTopBtn" style="height: 36px; padding: 0 14px; border-radius: 99px; font-weight: 700;">
+                <i data-icon="plus" data-size="16"></i>
+                <span>طلب جديد</span>
+              </button>
+              <button class="icon-btn sm" id="switchBtn" aria-label="تبديل الطلب"><i data-icon="swap" data-size="18"></i></button>
+            </div>
           </div>
 
           <div class="journey" id="journey">
@@ -46,6 +52,15 @@
           <div class="stack-lg">
             <div id="subAlert"></div>
             <div id="heroWrap"></div>
+            <div class="card soft" style="padding: 12px 16px; border: 1.5px dashed var(--stroke);">
+              <div class="row between">
+                <div>
+                  <b style="display:block;font-size:14px;">تريد إضافة أصناف أو طلب جديد؟</b>
+                  <small class="muted" style="font-size:12px;">تصفح 74 صنفاً من البقالة والألبان والخضار</small>
+                </div>
+                <button class="btn btn-gold sm" id="trackShopBtn"><i data-icon="plus" data-size="15"></i><span>تسوق الآن</span></button>
+              </div>
+            </div>
             <div>
               <div class="section-title"><h2>أصناف طلبك</h2><span class="num" id="doneTxt">0 / 0</span></div>
               <div class="list" id="trackList"></div>
@@ -68,6 +83,20 @@
             <div>
               <div class="section-title"><h2>الأصناف</h2><span class="num" id="catCount">0</span></div>
               <div class="pgrid" id="grid"></div>
+            </div>
+          </div>
+          <!-- Sticky Floating Checkout Bar in Shop -->
+          <div id="cartBar" class="cart-bar" style="display: none;">
+            <div class="cart-bar-in">
+              <div class="grow">
+                <b id="cartBarQty">0 صنف</b>
+                <span class="dot"></span>
+                <span class="num gold" id="cartBarTotal">0 ج.م</span>
+              </div>
+              <button class="btn btn-gold sm shine" id="cartBarBtn">
+                <i data-icon="check" data-size="16"></i>
+                <span>إرسال الطلب</span>
+              </button>
             </div>
           </div>
         </div>
@@ -100,6 +129,15 @@
         render();
       });
       AppDB.seedIfEmpty().catch(() => {});
+
+      $('newOrderTopBtn').onclick = () => {
+        Shell.go('shop');
+        Shell.toast('اختر الأصناف التي تريدها للطلب الجديد', { tone: 'ink' });
+      };
+      const tsb = $('trackShopBtn');
+      if (tsb) tsb.onclick = () => Shell.go('shop');
+      const cbb = $('cartBarBtn');
+      if (cbb) cbb.onclick = openCart;
 
       $('switchBtn').onclick = () => {
         const body = Shell.openSheet({
@@ -256,12 +294,28 @@
       }
       $('q').addEventListener('input', e => { query = e.target.value.trim(); renderCatalog(); Icons.mount(); });
 
+      function updateCartBar() {
+        const bar = $('cartBar');
+        if (!bar) return;
+        const count = bucket.reduce((s, x) => s + x.qty, 0);
+        if (count > 0) {
+          const lines = bucket.map(b => ({ p: Catalog.byId(b.pid), q: b.qty })).filter(l => l.p);
+          const total = lines.reduce((s, l) => s + l.p.price * l.q, 0);
+          $('cartBarQty').textContent = `${count} ${count === 1 ? 'صنف' : 'أصناف'}`;
+          $('cartBarTotal').innerHTML = Shell.money(total);
+          bar.style.display = 'block';
+        } else {
+          bar.style.display = 'none';
+        }
+      }
+
       async function add(pid) {
         const p = Catalog.byId(pid); if (!p) return;
         Shell.haptic();
         const ex = bucket.find(x => x.pid === pid);
         if (ex) ex.qty++; else bucket.push({ pid, qty: 1 });
         Shell.badge('cart', bucket.reduce((s, x) => s + x.qty, 0));
+        updateCartBar();
         Shell.toast('أُضيف إلى السلة', { tone: 'ok' });
       }
 
@@ -295,6 +349,7 @@
               const o = Logic.makeOrder({ name: nm, lines: bucket });
               await AppDB.put(o);
               bucket = []; Shell.badge('cart', 0); cur = o;
+              updateCartBar();
               Shell.closeSheet(); Shell.go('track'); render();
               Shell.toast('تم إنشاء الطلب', { tone: 'ok' });
             };
@@ -302,6 +357,7 @@
             if (ap) ap.onclick = async () => {
               await AppDB.update(cur.id, o => Logic.addLines(o, bucket));
               bucket = []; Shell.badge('cart', 0);
+              updateCartBar();
               Shell.closeSheet(); Shell.go('track'); render();
               Shell.toast('أُضيفت الأصناف للطلب', { tone: 'ok' });
             };

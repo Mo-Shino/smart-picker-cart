@@ -55,7 +55,10 @@
 
       <div class="container page">
         <div class="view" data-view="overview">
-          <div class="section-title"><h2>الطلبات</h2><span class="num" id="ordersCount">0</span></div>
+          <div class="section-title">
+            <div class="row-sm"><h2>الطلبات</h2><span class="num" id="ordersCount">0</span></div>
+            <button class="btn btn-gold sm shine" id="managerNewOrderBtn"><i data-icon="plus" data-size="16"></i><span>طلب جديد</span></button>
+          </div>
           <div class="stack" id="ordersList"></div>
         </div>
 
@@ -90,6 +93,25 @@
 
       AppDB.onOrders(list => { orders = list; sync(); });
       AppDB.seedIfEmpty().catch(() => {});
+
+      const mob = $('managerNewOrderBtn');
+      if (mob) {
+        mob.onclick = async () => {
+          Shell.haptic();
+          const names = ['محمود كمال', 'نيرة أحمد', 'حسام الدين', 'ياسمين علي'];
+          const name = names[Math.floor(Math.random() * names.length)];
+          const o = Logic.makeOrder({
+            name,
+            lines: [
+              { pid: 'p02', qty: 1 },
+              { pid: 'p10', qty: 1 },
+              { pid: 'p15', qty: 1 }
+            ]
+          });
+          await AppDB.put(o);
+          Shell.toast(`تم إنشاء طلب جديد باسم ${name}`, { tone: 'ok' });
+        };
+      }
 
       function sync() {
         const carts = new Set(orders.filter(o => o.cartId && !['completed', 'cancelled'].includes(o.status)).map(o => o.cartId)).size;

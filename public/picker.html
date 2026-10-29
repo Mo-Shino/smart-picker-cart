@@ -137,7 +137,20 @@
         const wrap = document.getElementById('heroWrap');
         if (!currentItem) {
           if (!cartOrders.length) {
-            wrap.innerHTML = `<div class="card"><div class="empty">${Art.cart(false, 'art')}<h3>لا توجد طلبات</h3><p>ستظهر الطلبات الجديدة هنا</p></div></div>`;
+            wrap.innerHTML = `
+              <div class="card">
+                <div class="empty">
+                  ${Art.cart(false, 'art')}
+                  <h3>لا توجد طلبات على العربة</h3>
+                  <p class="muted">يمكنك بدء طلب جديد من تطبيق العميل أو إنشاؤه مباشرة هنا</p>
+                  <button class="btn btn-gold shine" id="seedDemoHeroBtn" style="margin-top: 10px;">
+                    <i data-icon="plus" data-size="18"></i>
+                    <span>+ إنشاء طلب تجريبي فوري</span>
+                  </button>
+                </div>
+              </div>`;
+            const sdb = document.getElementById('seedDemoHeroBtn');
+            if (sdb) sdb.onclick = createQuickOrder;
             return;
           }
           wrap.innerHTML = `
@@ -219,15 +232,43 @@
         }).join('');
       }
 
+      async function createQuickOrder() {
+        Shell.haptic();
+        const names = ['أحمد فتحي', 'رنا مصطفى', 'محمود سامي', 'سارة إبراهيم'];
+        const name = names[Math.floor(Math.random() * names.length)];
+        const o = Logic.makeOrder({
+          name,
+          lines: [
+            { pid: 'p01', qty: 1 },
+            { pid: 'p05', qty: 1 },
+            { pid: 'p22', qty: 1 }
+          ]
+        });
+        await AppDB.put(o);
+        Shell.toast(`تم إنشاء طلب باسم ${name}`, { tone: 'ok' });
+      }
+
       function renderOrders() {
         const el = document.getElementById('ordersWrap');
-        if (!cartOrders.length) { el.innerHTML = `<div class="card soft center" style="padding:20px;"><span class="muted">لا توجد طلبات</span></div>`; return; }
+        const addBtnHtml = `
+          <button class="btn btn-gold block lg shine" id="pickerNewOrderBtn" style="margin-top: 14px;">
+            <i data-icon="plus" data-size="18"></i>
+            <span>+ إنشاء طلب تجريبي جديد</span>
+          </button>`;
+        if (!cartOrders.length) {
+          el.innerHTML = `<div class="card soft center" style="padding:20px;"><span class="muted">لا توجد طلبات</span></div>` + addBtnHtml;
+          const b = document.getElementById('pickerNewOrderBtn');
+          if (b) b.onclick = createQuickOrder;
+          return;
+        }
         el.innerHTML = cartOrders.map(o => `
           <div class="irow">
             <span class="bin lg ${o.bin}">${o.bin}</span>
             <div class="grow"><div class="nm">${o.customer.name}</div><div class="sub"><span class="num">${o.id}</span><span class="dot"></span><span>${o.status === 'ready' ? 'جاهز' : 'قيد التجميع'}</span></div></div>
             <b class="num none">${Shell.money(o.total)}</b>
-          </div>`).join('');
+          </div>`).join('') + addBtnHtml;
+        const b = document.getElementById('pickerNewOrderBtn');
+        if (b) b.onclick = createQuickOrder;
       }
 
       function openScanner() {

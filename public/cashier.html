@@ -40,7 +40,7 @@
                 <small class="muted" style="display:block;font-size:12px;">بانتظار الاعتماد</small>
                 <b class="num gold" id="readyCount" style="font-size:19px;">0 طلب</b>
               </div>
-              <button class="btn btn-gold shine sm none" id="scanTopBtn">
+              <button class="btn btn-gold shine sm" id="scanTopBtn">
                 <i data-icon="qr" data-size="18"></i>
                 <span>مسح الرمز</span>
               </button>
@@ -53,7 +53,17 @@
         <div class="view" data-view="audit">
           <div class="stack-lg sx">
             <div>
-              <div class="section-title"><h2>الطلبات الجاهزة</h2><span class="num" id="readySub">0</span></div>
+              <div class="section-title">
+                <h2>طلبات المتجر</h2>
+                <span class="num" id="totalActiveCount">0</span>
+              </div>
+              <!-- Filter chips so cashier can easily see Ready, In-Progress, and Cleared -->
+              <div class="chips" id="cashierFilters" style="margin-bottom: 12px;">
+                <button class="chip on" data-f="all">الكل</button>
+                <button class="chip" data-f="ready">جاهز للاعتماد <span class="num" id="chipReady">0</span></button>
+                <button class="chip" data-f="picking">قيد التجهيز <span class="num" id="chipPicking">0</span></button>
+                <button class="chip" data-f="completed">المعتمدة <span class="num" id="chipCleared">0</span></button>
+              </div>
               <div class="list" id="readyList"></div>
             </div>
             <div id="ticketWrap"></div>
@@ -70,7 +80,7 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      let orders = [], sel = null;
+      let orders = [], sel = null, filter = 'all';
       const $ = id => document.getElementById(id);
 
       Shell.mount({
@@ -85,44 +95,75 @@
 
       $('scanTopBtn').onclick = openScanner;
       Scanner.hardware(code => handleCode(code));
+
+      // Filter chips handling
+      $('cashierFilters').querySelectorAll('[data-f]').forEach(btn => {
+        btn.onclick = () => {
+          filter = btn.dataset.f;
+          $('cashierFilters').querySelectorAll('[data-f]').forEach(b => b.classList.toggle('on', b === btn));
+          sync();
+        };
+      });
+
       AppDB.onOrders(list => { orders = list; sync(); });
       AppDB.seedIfEmpty().catch(() => {});
 
       function sync() {
         const ready = orders.filter(o => o.status === 'ready');
+        const picking = orders.filter(o => ['picking', 'new'].includes(o.status));
         const active = orders.filter(o => ['ready', 'picking', 'new'].includes(o.status));
         const cleared = orders.filter(o => o.status === 'completed');
 
         $('readyCount').textContent = `${ready.length} طلب`;
-        $('readySub').textContent = ready.length || active.length;
+        $('totalActiveCount').textContent = active.length;
         $('clearedCount').textContent = cleared.length;
+        $('chipReady').textContent = ready.length;
+        $('chipPicking').textContent = picking.length;
+        $('chipCleared').textContent = cleared.length;
 
-        const pool = ready.length ? ready : active;
-        if (sel) sel = orders.find(o => o.id === sel.id && o.status !== 'completed') || null;
+        // Choose which orders to show based on filter:
+        let pool = [];
+        if (filter === 'ready') pool = ready;
+        else if (filter === 'picking') pool = picking;
+        else if (filter === 'completed') pool = cleared;
+        else {
+          // 'all' shows all active orders (ready at top, then in-progress) plus recently completed
+          pool = ready.concat(picking);
+        }
+
+        if (sel) sel = orders.find(o => o.id === sel.id) || null;
         if (!sel && pool.length) sel = pool[0];
 
-        renderReady(pool);
+        renderPool(pool);
         renderTicket(sel);
         renderCleared(cleared);
         Icons.mount();
       }
 
-      function renderReady(pool) {
+      function renderPool(pool) {
         const el = $('readyList');
         if (!pool.length) {
-          el.innerHTML = `<div class="card soft center" style="padding:20px;"><span class="muted">لا توجد طلبات حالياً</span></div>`;
+          el.innerHTML = `<div class="card soft center" style="padding:20px;"><span class="muted">لا توجد طلبات في هذا القسم</span></div>`;
           return;
         }
-        const anim = Shell.first('ready') ? 'rise' : '';
-        el.innerHTML = pool.map((o, i) => `
+        const anim = Shell.first('cashierPool') ? 'rise' : '';
+        el.innerHTML = pool.map((o, i) => {
+          const isReady = o.status === 'ready';
+          const isDone = o.status === 'completed';
+          const p = Logic.progress(o);
+          const badgeClass = isReady ? 'b-ok' : isDone ? 'b-mute' : 'b-gold';
+          const badgeText = isReady ? 'جاهز للاعتماد' : isDone ? 'معتمد' : `قيد التجهيز (${p.done}/${p.total})`;
+          return `
           <div class="irow tap ${sel && sel.id === o.id ? 'sel' : ''} ${anim}" style="--i:${i}" data-id="${o.id}">
             <span class="bin lg ${o.bin || 'A'}">${o.bin || 'A'}</span>
             <div class="grow">
               <div class="nm">${o.customer.name}</div>
-              <div class="sub"><span class="num">${o.id}</span><span class="dot"></span><span class="num">${Logic.liveItems(o).length} أصناف</span></div>
+              <div class="sub"><span class="num">${o.id}</span><span class="dot"></span><span class="num">${Shell.money(o.total)}</span></div>
             </div>
-            <span class="badge ${o.status === 'ready' ? 'b-ok' : 'b-gold'}">${o.status === 'ready' ? 'جاهز' : 'جاري'}</span>
-          </div>`).join('');
+            <span class="badge ${badgeClass}">${badgeText}</span>
+          </div>`;
+        }).join('');
+
         el.querySelectorAll('[data-id]').forEach(r => r.onclick = () => {
           sel = orders.find(o => o.id === r.dataset.id);
           sync();
@@ -134,6 +175,8 @@
         if (!o) { w.innerHTML = ''; return; }
         const live = Logic.liveItems(o);
         const isReady = o.status === 'ready';
+        const isDone = o.status === 'completed';
+        const p = Logic.progress(o);
         w.innerHTML = `
           <div class="ticket rise">
             <div class="ticket-top">
@@ -142,7 +185,9 @@
                   <span class="bin ${o.bin || 'A'}">${o.bin || 'A'}</span>
                   <span class="badge b-glass num">${o.id}</span>
                 </div>
-                <span class="badge ${isReady ? 'b-ok' : 'b-gold'}">${isReady ? 'مدقق 100%' : 'قيد التجميع'}</span>
+                <span class="badge ${isReady ? 'b-ok' : isDone ? 'b-mute' : 'b-gold'}">
+                  ${isReady ? 'مدقق وجاهز' : isDone ? 'تم الاعتماد والتسليم' : `قيد التجهيز ${p.pct}%`}
+                </span>
               </div>
               <div class="row between">
                 <div class="grow">
@@ -161,7 +206,7 @@
             <div class="ticket-body">
               <div class="section-title" style="margin-bottom: 8px;">
                 <h3 style="font-size:15px;">الأصناف</h3>
-                <span class="num">${live.length}</span>
+                <span class="num">${p.done} / ${live.length}</span>
               </div>
 
               <div style="margin-bottom: 18px;">
@@ -178,14 +223,21 @@
                   </div>`).join('')}
               </div>
 
-              <button class="btn btn-ok block lg" id="approveBtn">
-                <i data-icon="shield" data-size="20"></i>
-                <span>اعتماد وتصريح خروج</span>
-              </button>
+              ${!isDone ? `
+                <button class="btn ${isReady ? 'btn-ok' : 'btn-gold'} block lg" id="approveBtn">
+                  <i data-icon="shield" data-size="20"></i>
+                  <span>${isReady ? 'اعتماد وتصريح خروج' : 'اعتماد مباشر وتخطي'}</span>
+                </button>
+              ` : `
+                <div class="card soft center" style="padding:14px;">
+                  <span class="badge b-ok"><i data-icon="check" data-size="16"></i><span>تم اعتماد هذا الطلب بنجاح</span></span>
+                </div>
+              `}
             </div>
           </div>`;
 
-        $('approveBtn').onclick = () => approve(o);
+        const b = $('approveBtn');
+        if (b) b.onclick = () => approve(o);
       }
 
       async function approve(o) {
@@ -200,7 +252,6 @@
           <h2 class="t-h2" style="margin-bottom: 6px;">تم الاعتماد</h2>
           <p class="muted ell" style="margin-bottom: 12px; font-size: 14px;">${o.customer.name}</p>
           <span class="badge b-ok num">PASS #${o.id}</span>`, 1900);
-        sel = null;
       }
 
       function renderCleared(list) {
