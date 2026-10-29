@@ -102,16 +102,21 @@
       AppDB.seedIfEmpty().catch(() => {});
 
       $('switchBtn').onclick = () => {
-        if (!orders.length) return Shell.toast('لا توجد طلبات', { tone: 'warn' });
         const body = Shell.openSheet({
           title: 'طلباتي',
-          html: `<div class="list">${orders.map(o => `
+          html: `<div class="stack">
+            <div class="list">${orders.map(o => `
             <div class="irow tap ${cur && cur.id === o.id ? 'sel' : ''}" data-id="${o.id}">
               <div class="grow"><div class="nm">${o.customer.name}</div><div class="sub"><span class="num">${o.id}</span><span class="dot"></span><span class="num">${Shell.money(o.total)}</span></div></div>
               <span class="badge ${o.status === 'ready' ? 'b-ok' : o.status === 'completed' ? 'b-mute' : 'b-gold'}">${o.status === 'ready' ? 'جاهز' : o.status === 'completed' ? 'مكتمل' : 'قيد التجهيز'}</span>
-            </div>`).join('')}</div>`
+            </div>`).join('')}</div>
+            <button class="btn btn-gold block" id="newOrderSheetBtn"><i data-icon="plus" data-size="18"></i><span>إنشاء طلب جديد</span></button>
+          </div>`
         });
+        Icons.mount();
         body.querySelectorAll('[data-id]').forEach(el => el.onclick = () => { cur = orders.find(o => o.id === el.dataset.id); Shell.closeSheet(); render(); });
+        const nb = body.querySelector('#newOrderSheetBtn');
+        if (nb) nb.onclick = () => { Shell.closeSheet(); Shell.go('shop'); Shell.toast('اختر الأصناف ثم افتح السلة', { tone: 'ink' }); };
       };
 
       function render() {
@@ -254,35 +259,52 @@
       async function add(pid) {
         const p = Catalog.byId(pid); if (!p) return;
         Shell.haptic();
-        if (cur && Logic.isEditable(cur)) {
-          await AppDB.update(cur.id, o => Logic.addLines(o, [{ pid, qty: 1 }]));
-          Shell.toast('أُضيف إلى طلبك', { tone: 'ok' });
-        } else {
-          const ex = bucket.find(x => x.pid === pid);
-          if (ex) ex.qty++; else bucket.push({ pid, qty: 1 });
-          Shell.badge('cart', bucket.reduce((s, x) => s + x.qty, 0));
-          Shell.toast('أُضيف إلى السلة', { tone: 'ok' });
-        }
+        const ex = bucket.find(x => x.pid === pid);
+        if (ex) ex.qty++; else bucket.push({ pid, qty: 1 });
+        Shell.badge('cart', bucket.reduce((s, x) => s + x.qty, 0));
+        Shell.toast('أُضيف إلى السلة', { tone: 'ok' });
       }
 
       function openCart() {
         if (!bucket.length) {
-          return Shell.openSheet({ title: 'السلة', html: `<div class="empty">${Art.cart(false, 'art')}<h3>السلة فارغة</h3><button class="btn btn-gold" data-close><span>تصفّح الأصناف</span></button></div>` });
+          return Shell.openSheet({
+            title: 'السلة',
+            html: `<div class="empty">${Art.cart(false, 'art')}<h3>السلة فارغة</h3><button class="btn btn-gold" id="goShopBtn"><span>تصفّح الأصناف</span></button></div>`,
+            onMount: b => {
+              const g = b.querySelector('#goShopBtn');
+              if (g) g.onclick = () => { Shell.closeSheet(); Shell.go('shop'); };
+              Icons.mount();
+            }
+          });
         }
-        const lines = bucket.map(b => ({ p: Catalog.byId(b.pid), q: b.qty }));
+        const lines = bucket.map(b => ({ p: Catalog.byId(b.pid), q: b.qty })).filter(l => l.p);
         const total = lines.reduce((s, l) => s + l.p.price * l.q, 0);
+        const canAddCur = cur && Logic.isEditable(cur);
         Shell.openSheet({
           title: 'سلتي',
           html: `<div class="stack">
             <div class="list">${lines.map(l => `<div class="irow"><div class="tile tile-sm t-${tintOf(l.p.dept)}">${Art.dept(l.p.dept)}</div><div class="grow"><div class="nm">${l.p.name}</div><div class="sub num">${Shell.money(l.p.price)}</div></div><b class="num none">× ${l.q}</b></div>`).join('')}</div>
             <div class="row between" style="font-size: 17px; font-weight: 700; padding-top: 6px;"><span>المجموع</span><span class="num">${Shell.money(total)}</span></div>
-            <button class="btn btn-gold shine block lg" id="sendOrder"><i data-icon="check" data-size="20"></i><span>إرسال الطلب</span></button></div>`,
-          onMount: body => body.querySelector('#sendOrder').onclick = async () => {
-            const o = Logic.makeOrder({ name: 'عميل جديد', lines: bucket });
-            await AppDB.put(o);
-            bucket = []; Shell.badge('cart', 0); cur = o;
-            Shell.closeSheet(); Shell.go('track'); render();
-            Shell.toast('وصل طلبك', { tone: 'ok' });
+            <input type="text" class="input" id="custNameInp" placeholder="اسم العميل (مثال: محمد علي)" value="محمد علي">
+            <button class="btn btn-gold shine block lg" id="sendOrder"><i data-icon="plus" data-size="20"></i><span>إرسال كطلب جديد</span></button>
+            ${canAddCur ? `<button class="btn btn-soft block" id="appendOrder"><i data-icon="check" data-size="18"></i><span>إضافة للطلب الحالي (${cur.id})</span></button>` : ''}
+          </div>`,
+          onMount: body => {
+            body.querySelector('#sendOrder').onclick = async () => {
+              const nm = (body.querySelector('#custNameInp').value || '').trim() || 'عميل جديد';
+              const o = Logic.makeOrder({ name: nm, lines: bucket });
+              await AppDB.put(o);
+              bucket = []; Shell.badge('cart', 0); cur = o;
+              Shell.closeSheet(); Shell.go('track'); render();
+              Shell.toast('تم إنشاء الطلب', { tone: 'ok' });
+            };
+            const ap = body.querySelector('#appendOrder');
+            if (ap) ap.onclick = async () => {
+              await AppDB.update(cur.id, o => Logic.addLines(o, bucket));
+              bucket = []; Shell.badge('cart', 0);
+              Shell.closeSheet(); Shell.go('track'); render();
+              Shell.toast('أُضيفت الأصناف للطلب', { tone: 'ok' });
+            };
           }
         });
         Icons.mount();

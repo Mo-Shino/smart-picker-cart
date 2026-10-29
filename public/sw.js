@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kartflow-v2';
+const CACHE_NAME = 'kartflow-v4';
 const ASSETS = [
   '/',
   '/index.html',
@@ -20,7 +20,7 @@ const ASSETS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS).catch(err => console.log('Cache addAll error (normal during dev):', err));
+      return cache.addAll(ASSETS).catch(() => {});
     })
   );
   self.skipWaiting();
@@ -38,11 +38,17 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Always fetch network first for real-time APIs, fallback to cache for static
-  if (event.request.url.includes('/socket.io/') || event.request.url.includes('/api/')) {
+  if (event.request.method !== 'GET') return;
+  if (event.request.url.includes('/socket.io/') || event.request.url.includes('/api/') || event.request.url.includes('firestore.googleapis.com')) {
     return;
   }
   event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request))
+    fetch(event.request, { cache: 'no-cache' })
+      .then((res) => {
+        const copy = res.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy)).catch(() => {});
+        return res;
+      })
+      .catch(() => caches.match(event.request))
   );
 });

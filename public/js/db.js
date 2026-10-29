@@ -1,17 +1,31 @@
 // Data layer: one `orders` collection. Uses Firestore when configured, otherwise a local store
 // (same browser, synced across tabs). All business changes go through update(id, mutator).
 (function () {
-  const LS = 'kf_orders_v2';
+  const LS = 'kf_orders_v3';
   const params = new URLSearchParams(location.search);
   if (params.has('local')) localStorage.setItem('kf_mode', 'local');
   if (params.has('cloud')) localStorage.removeItem('kf_mode');
 
-  let fs = null, cloud = false, cache = [];
+  let fs = null, cloud = false, cache = [], seeding = false;
   const subs = new Set();
   const chan = window.BroadcastChannel ? new BroadcastChannel('kf_sync') : null;
   let cloudUnsub = null;
 
+  // Validate that an order matches the v3 schema (guards against legacy v1 docs like ORD-101 in Firestore)
+  function isValidOrder(o) {
+    return !!(
+      o &&
+      typeof o.id === 'string' &&
+      o.customer &&
+      typeof o.customer.name === 'string' &&
+      Array.isArray(o.items) &&
+      o.items.every(it => it && typeof it.id === 'string' && typeof it.dept === 'string')
+    );
+  }
+
   function init() {
+    // Clean legacy localStorage key if present
+    try { localStorage.removeItem('kf_orders_v2'); } catch (e) {}
     const cfg = window.FIREBASE_CONFIG;
     if (localStorage.getItem('kf_mode') !== 'local' && cfg && cfg.apiKey && window.firebase) {
       try {
@@ -25,19 +39,29 @@
   const readLocal = () => {
     try {
       const raw = localStorage.getItem(LS);
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        const parsed = JSON.parse(raw).filter(isValidOrder);
+        if (parsed.length) return parsed;
+      }
       const seed = window.Logic ? window.Logic.seedOrders() : [];
       if (seed.length) localStorage.setItem(LS, JSON.stringify(seed));
       return seed;
-    } catch (e) { return []; }
+    } catch (e) { return window.Logic ? window.Logic.seedOrders() : []; }
   };
-  const writeLocal = list => { localStorage.setItem(LS, JSON.stringify(list)); chan && chan.postMessage('c'); emitLocal(); };
+  const writeLocal = list => {
+    const valid = (list || []).filter(isValidOrder);
+    localStorage.setItem(LS, JSON.stringify(valid));
+    chan && chan.postMessage('c');
+    emitLocal();
+  };
   const clone = o => JSON.parse(JSON.stringify(o));
-  const sortList = l => l.sort((a, b) => a.createdAt - b.createdAt);
+  const sortList = l => l.filter(isValidOrder).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
 
   function emit(list) {
     cache = sortList(list);
-    subs.forEach(cb => cb(cache));
+    subs.forEach(cb => {
+      try { cb(cache); } catch (e) { console.error(e); }
+    });
   }
   function emitLocal() { if (!cloud) emit(readLocal()); }
 
@@ -47,18 +71,43 @@
   function onOrders(cb) {
     subs.add(cb);
     if (!cloud) {
-      cb(sortList(readLocal()));
       cache = sortList(readLocal());
+      cb(cache);
     } else {
       const local = readLocal();
       if (!cache.length && local.length) cache = sortList(local);
       cb(cache);
       if (!cloudUnsub) {
         cloudUnsub = fs.collection('orders').onSnapshot(
-          snap => {
-            const list = snap.docs.map(d => d.data());
-            if (list.length) writeLocal(list);
-            emit(list);
+          async snap => {
+            const rawDocs = snap.docs;
+            const validList = [];
+            const invalidRefs = [];
+            rawDocs.forEach(d => {
+              const data = d.data();
+              if (isValidOrder(data)) validList.push(data);
+              else invalidRefs.push(d.ref);
+            });
+            // Automatically remove legacy v1 docs from Firestore
+            if (invalidRefs.length) {
+              Promise.all(invalidRefs.map(r => r.delete().catch(() => {})));
+            }
+            if (validList.length) {
+              writeLocal(validList);
+              emit(validList);
+            } else if (!seeding && window.Logic) {
+              seeding = true;
+              try {
+                const seeded = window.Logic.seedOrders();
+                for (const o of seeded) await fs.collection('orders').doc(o.id).set(clone(o));
+                writeLocal(seeded);
+                emit(seeded);
+              } catch (e) {
+                emit(readLocal());
+              } finally {
+                seeding = false;
+              }
+            }
           },
           err => { console.warn('cloud sync failed, switching to local mode', err); cloud = false; cloudUnsub = null; emitLocal(); }
         );
@@ -82,6 +131,7 @@
         const snap = await tx.get(ref);
         if (!snap.exists) return false;
         const o = snap.data();
+        if (!isValidOrder(o)) return false;
         const changed = mutator(o);
         if (changed) tx.set(ref, clone(o));
         return !!changed;
@@ -97,19 +147,35 @@
   }
 
   async function seedIfEmpty() {
+    if (seeding) return;
     if (cloud) {
-      const snap = await fs.collection('orders').limit(1).get();
-      if (!snap.empty) return;
-    } else if (readLocal().length) return;
-    for (const o of window.Logic.seedOrders()) await put(o);
+      const snap = await fs.collection('orders').get();
+      const valid = snap.docs.filter(d => isValidOrder(d.data()));
+      if (valid.length > 0) return;
+      seeding = true;
+      try {
+        // Delete any invalid legacy docs
+        await Promise.all(snap.docs.filter(d => !isValidOrder(d.data())).map(d => d.ref.delete().catch(() => {})));
+        for (const o of window.Logic.seedOrders()) await put(o);
+      } finally {
+        seeding = false;
+      }
+    } else if (!readLocal().length) {
+      for (const o of window.Logic.seedOrders()) await put(o);
+    }
   }
 
   async function reset() {
-    if (cloud) {
-      const snap = await fs.collection('orders').get();
-      await Promise.all(snap.docs.map(d => d.ref.delete()));
-    } else writeLocal([]);
-    for (const o of window.Logic.seedOrders()) await put(o);
+    seeding = true;
+    try {
+      if (cloud) {
+        const snap = await fs.collection('orders').get();
+        await Promise.all(snap.docs.map(d => d.ref.delete()));
+      } else writeLocal([]);
+      for (const o of window.Logic.seedOrders()) await put(o);
+    } finally {
+      seeding = false;
+    }
   }
 
   init();
