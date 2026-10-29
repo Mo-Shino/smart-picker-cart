@@ -31,7 +31,7 @@
     const all = c.tabs.concat(c.center ? [c.center] : []);
     const navItem = t => `<button class="rail-link ${t.cta ? 'cta' : ''}" ${t.act ? `data-act="${t.id}"` : `data-go="${t.id}"`} data-tab="${t.id}">${I(t.icon, 20)}<span>${t.label}</span><span class="nbadge" data-badge="${t.id}" hidden></span></button>`;
     const rail = `<aside class="rail">
-      <a class="rail-brand" href="/">${Logo(42)}<div><b>KartFlow</b><small>تجهيز أسرع. طوابير أقل.</small></div></a>
+      <a class="rail-brand" href="/">${Logo(42)}<div><b>KartFlow</b><small>تجهيز أسرع وطوابير أقل</small></div></a>
       <nav class="rail-nav">${all.map(navItem).join('')}</nav>
       <div><div class="rail-title">التطبيقات</div><div class="rail-apps">
         ${APPS.map(a => `<a class="rail-app ${a.id === c.role ? 'cur' : ''}" href="${a.href}">${I(a.icon, 18)}<span>${a.label}</span></a>`).join('')}

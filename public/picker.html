@@ -289,7 +289,7 @@
       function markUnavailable(obj) {
         Shell.openSheet({
           title: 'حذف الصنف؟',
-          html: `<div class="stack"><p class="muted">سيُحذف «${obj.item.name}» من الطلب.</p>
+          html: `<div class="stack"><p class="muted">سيُحذف «${obj.item.name}» من الطلب</p>
             <div class="btn-row"><button class="btn btn-soft" data-close>تراجع</button><button class="btn btn-bad" id="okDel">حذف</button></div></div>`,
           onMount: body => body.querySelector('#okDel').onclick = async () => {
             await AppDB.update(obj.order.id, o => Logic.markUnavailable(o, obj.item.id));
