@@ -2,12 +2,10 @@
   "name": "smart-picker-cart",
   "version": "1.0.0",
   "description": "Smart Supermarket Order-Picking Cart System with Real-Time Customer Sync and Fast-Pass Clearance",
-  "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "build": "echo Static build complete"
+    "start": "node server.js"
   },
-  "dependencies": {
+  "devDependencies": {
     "express": "^4.22.3",
     "socket.io": "^4.8.4"
   }
