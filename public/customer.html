@@ -46,6 +46,21 @@
           <div class="stack-lg">
             <div id="subAlert"></div>
             <div id="heroWrap"></div>
+
+            <div class="action-banner">
+              <div class="action-banner-info">
+                <div class="action-banner-ico"><i data-icon="store" data-size="20"></i></div>
+                <div class="action-banner-text">
+                  <span class="action-banner-title">إضافة أصناف أو طلب جديد</span>
+                  <span class="action-banner-sub">تصفح 74 صنفاً من البقالة والألبان</span>
+                </div>
+              </div>
+              <button class="action-banner-btn" id="trackShopBtn">
+                <i data-icon="plus" data-size="15"></i>
+                <span>تسوق الآن</span>
+              </button>
+            </div>
+
             <div>
               <div class="section-title"><h2>أصناف طلبك</h2><span class="num" id="doneTxt">0 / 0</span></div>
               <div class="list" id="trackList"></div>
@@ -100,6 +115,9 @@
         render();
       });
       AppDB.seedIfEmpty().catch(() => {});
+
+      const tsb = $('trackShopBtn');
+      if (tsb) tsb.onclick = () => Shell.go('shop');
 
       $('switchBtn').onclick = () => {
         const body = Shell.openSheet({
