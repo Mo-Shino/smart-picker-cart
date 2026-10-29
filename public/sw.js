@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kartflow-v7';
+const CACHE_NAME = 'kartflow-v8';
 const ASSETS = [
   '/',
   '/index.html',
