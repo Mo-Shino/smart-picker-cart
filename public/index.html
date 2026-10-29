@@ -2,15 +2,19 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>KartFlow | كارت فلو - منظومة التجهيز الذكي</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>KartFlow | كارت فلو</title>
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#0A1D1B">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="/css/style.css">
-
-  <!-- Firebase Cloud SDK -->
+  <script>
+    try { if (sessionStorage.getItem('kf_splash') || location.search.includes('nosplash')) document.documentElement.classList.add('no-splash'); else sessionStorage.setItem('kf_splash', '1'); } catch (e) { document.documentElement.classList.add('no-splash'); }
+  </script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="/config.js"></script>
@@ -18,171 +22,94 @@
   <script src="/js/catalog.js"></script>
   <script src="/js/logic.js"></script>
   <script src="/js/db.js"></script>
+  <script src="/js/shell.js"></script>
 </head>
 <body>
+  <!-- Intro splash (first visit per session) -->
+  <div class="splash" id="splash" aria-hidden="true">
+    <div class="splash-in">
+      <div id="splashLogo"></div>
+      <b>KartFlow</b>
+      <small>كارت فلو</small>
+    </div>
+  </div>
+
   <div class="welcome">
-    <!-- Hero Header -->
     <div class="welcome-hero">
-      <div class="container" style="max-width: 680px;">
-        <div class="topbar" style="margin-bottom: 14px;">
+      <div class="container hero-in" style="max-width: 680px;">
+        <div class="topbar" style="margin-bottom: 20px;">
           <div class="brand-lockup">
             <div id="brandLogo"></div>
-            <div>
-              <b style="font-size: 20px; letter-spacing: -0.01em;">KartFlow</b>
-              <small>تجهيز أسرع • طوابير أقل</small>
-            </div>
+            <b>KartFlow</b>
           </div>
-          <span class="badge b-glass">
-            <span class="live-dot" style="background:#5FD6A0"></span>
-            <span>المنظومة نشطة</span>
-          </span>
+          <div class="grow"></div>
+          <span class="badge b-live"><span class="live-dot"></span><span>مباشر</span></span>
         </div>
 
-        <div style="text-align: center; margin-top: 12px; margin-bottom: 8px;">
-          <h1 class="t-display" style="font-size: clamp(24px, 5vw, 32px); color: #F4F1E8; margin-bottom: 8px;">
-            عربة التسوق الذكية لمُحضّري الطلبات
-          </h1>
-          <p class="muted" style="max-width: 520px; margin: 0 auto; font-size: 14.5px; line-height: 1.6;">
-            منظومة متكاملة تربط عربة المُحضّر الذكية في الممرات، والعميل لحظياً على هاتفه، وبوابة الكاشير للتخليص السريع بدون انتظار.
-          </p>
-        </div>
+        <h1 class="t-display center">تجهيز أسرع.<br><span class="gold">طوابير أقل.</span></h1>
 
-        <div id="cartArtWrap" style="text-align: center;"></div>
+        <div id="cartArtWrap" class="center" style="margin-top: 6px;"></div>
       </div>
     </div>
 
-    <!-- Interactive Workstation Selector -->
     <div class="welcome-panel">
-      <div class="inner stack-lg">
-        <!-- Live Operations Pulse -->
-        <div class="kpis">
-          <div class="kpi t-sand">
-            <div class="row between">
-              <span class="l">الصناديق الذكية</span>
-              <div class="ico"><i data-icon="box" data-size="18"></i></div>
-            </div>
-            <div class="v num">3 Bins</div>
-          </div>
-          <div class="kpi t-mint">
-            <div class="row between">
-              <span class="l">متوسط التجهيز</span>
-              <div class="ico"><i data-icon="timer" data-size="18"></i></div>
-            </div>
-            <div class="v num">4.2m</div>
-          </div>
-          <div class="kpi t-sky">
-            <div class="row between">
-              <span class="l">دقة التجميع</span>
-              <div class="ico"><i data-icon="shield" data-size="18"></i></div>
-            </div>
-            <div class="v num">99.8%</div>
-          </div>
-          <div class="kpi t-peach">
-            <div class="row between">
-              <span class="l">حالة التزامن</span>
-              <div class="ico"><i data-icon="activity" data-size="18"></i></div>
-            </div>
-            <div class="v" style="font-size: 19px; font-weight: 700;">فوري</div>
-          </div>
+      <div class="inner stack-lg sx">
+        <div class="stats">
+          <div class="stat"><b class="num" data-count="4.2" data-dec="1">0</b><small>دقيقة / طلب</small></div>
+          <div class="stat"><b class="num" data-count="99.8" data-dec="1">0</b><small>% دقة</small></div>
+          <div class="stat"><b class="num" data-count="3">0</b><small>صناديق</small></div>
         </div>
 
-        <!-- Roles List -->
         <div>
-          <div class="section-title">
-            <h2>محطات العمل التشغيلية</h2>
-            <span>اختر المحطة للدخول</span>
-          </div>
-
-          <div class="stack">
-            <!-- 1. Picker Workstation -->
+          <div class="section-title"><h2>اختر محطتك</h2></div>
+          <div class="stack sx">
             <a href="/picker.html" class="role">
-              <div class="tile t-sand">
-                <i data-icon="cart" data-size="28"></i>
-              </div>
-              <div>
-                <b>عربة التجميع الذكية (Smart Cart)</b>
-                <small>توجيه مسار الممرات، تجميع متعدد في الصناديق A-B-C، وقارئ باركود فوري</small>
-              </div>
-              <div class="go">
-                <i data-icon="arrow-left" data-size="18"></i>
-              </div>
+              <div class="tile t-sand"><i data-icon="cart" data-size="26"></i></div>
+              <div><b>عربة التجميع</b><small>تجهيز الطلبات</small></div>
+              <div class="go"><i data-icon="arrow-left" data-size="18"></i></div>
             </a>
-
-            <!-- 2. Customer Live Tracking -->
             <a href="/customer.html" class="role">
-              <div class="tile t-mint">
-                <i data-icon="phone" data-size="28"></i>
-              </div>
-              <div>
-                <b>تطبيق العميل (Customer Live Tracking)</b>
-                <small>تتبع مسار الأوردر الحية، إشعارات البدائل الفورية، والتسوق المباشر</small>
-              </div>
-              <div class="go">
-                <i data-icon="arrow-left" data-size="18"></i>
-              </div>
+              <div class="tile t-mint"><i data-icon="phone" data-size="26"></i></div>
+              <div><b>تطبيق العميل</b><small>تتبع طلبك لحظياً</small></div>
+              <div class="go"><i data-icon="arrow-left" data-size="18"></i></div>
             </a>
-
-            <!-- 3. Cashier Fast-Pass Gate -->
             <a href="/cashier.html" class="role">
-              <div class="tile t-peach">
-                <i data-icon="receipt" data-size="28"></i>
-              </div>
-              <div>
-                <b>كاشير التخليص السريع (Fast-Pass Gate)</b>
-                <small>فحص Master QR، تدقيق رقمي وتذكرة عبور فورية بدون الوقوف في الطوابير</small>
-              </div>
-              <div class="go">
-                <i data-icon="arrow-left" data-size="18"></i>
-              </div>
+              <div class="tile t-peach"><i data-icon="receipt" data-size="26"></i></div>
+              <div><b>الكاشير</b><small>عبور سريع</small></div>
+              <div class="go"><i data-icon="arrow-left" data-size="18"></i></div>
             </a>
-
-            <!-- 4. Store Operations Dashboard -->
             <a href="/manager.html" class="role">
-              <div class="tile t-lav">
-                <i data-icon="layout" data-size="28"></i>
-              </div>
-              <div>
-                <b>لوحة عمليات المتجر (Store Operations)</b>
-                <small>مراقبة كفاءة العربات، التغذية الحية للحركات، وإحصائيات التجهيز اللحظية</small>
-              </div>
-              <div class="go">
-                <i data-icon="arrow-left" data-size="18"></i>
-              </div>
+              <div class="tile t-lav"><i data-icon="layout" data-size="26"></i></div>
+              <div><b>لوحة المتجر</b><small>أداء اليوم</small></div>
+              <div class="go"><i data-icon="arrow-left" data-size="18"></i></div>
             </a>
           </div>
         </div>
 
-        <!-- Footer Meta -->
-        <div class="row between muted" style="padding-top: 14px; border-top: 1px solid var(--line); font-size: 13px;">
-          <div class="row-sm">
-            <i data-icon="store" data-size="16"></i>
-            <span>هايبر الواحة • فرع المعادي</span>
-          </div>
-          <button id="resetDemoBtn" class="link-btn faint" style="cursor: pointer;">
-            إعادة تهيئة البيانات التجريبية
-          </button>
+        <div class="row-sm muted center" style="justify-content: center; font-size: 13px;">
+          <i data-icon="store" data-size="16"></i>
+          <span>هايبر الواحة · فرع المعادي</span>
         </div>
       </div>
     </div>
   </div>
 
   <script>
-    document.addEventListener('DOMContentLoaded', async () => {
-      // Render brand logo & cart art
-      document.getElementById('brandLogo').innerHTML = Logo(44, true);
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('brandLogo').innerHTML = Logo(40, true);
+      document.getElementById('splashLogo').innerHTML = Logo(84, true);
       document.getElementById('cartArtWrap').innerHTML = Art.cart(true, 'welcome-art');
       Icons.mount();
+      AppDB.seedIfEmpty().catch(() => {});
 
-      // Seed sample orders if first run
-      await AppDB.seedIfEmpty();
-
-      // Reset button
-      document.getElementById('resetDemoBtn').addEventListener('click', async () => {
-        if (confirm('هل ترغب في إعادة تهيئة الطلبات التجريبية الافتراضية؟')) {
-          await AppDB.reset();
-          location.reload();
-        }
-      });
+      // count-up stats once the splash has lifted
+      const delay = document.documentElement.classList.contains('no-splash') ? 300 : 2200;
+      setTimeout(() => {
+        document.querySelectorAll('[data-count]').forEach(el => {
+          const dec = +el.dataset.dec || 0;
+          Shell.countUp(el, +el.dataset.count, { dur: 1100, render: v => v.toFixed(dec) });
+        });
+      }, delay);
     });
   </script>
 </body>

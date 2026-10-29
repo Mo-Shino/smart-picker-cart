@@ -2,15 +2,16 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>تطبيق العميل | KartFlow Customer Live</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>طلبي | KartFlow</title>
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#1E4A44">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="/css/style.css">
-
-  <!-- Firebase Cloud SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="/config.js"></script>
@@ -23,98 +24,50 @@
 <body>
   <div class="app" id="app">
     <main class="stage">
-      <!-- Top Band Header -->
       <header class="band">
         <div class="container band-in">
           <div class="topbar">
-            <div class="brand-lockup">
-              <a href="/" class="icon-btn sm" aria-label="الرئيسية"><i data-icon="chevron-right" data-size="18"></i></a>
-              <div>
-                <b id="customerHeaderName">متابعة الطلب</b>
-                <small>تجهيز مباشر من الأرفف</small>
-              </div>
-            </div>
-            <div class="row-sm">
-              <span class="badge b-glass num" id="customerOrderIdTag">KF-1041</span>
-              <button class="icon-btn sm" id="switchOrderBtn" title="تبديل الطلب"><i data-icon="swap" data-size="16"></i></button>
-            </div>
+            <a href="/" class="icon-btn sm" aria-label="الرئيسية"><i data-icon="chevron-right" data-size="20"></i></a>
+            <div class="ttl"><b id="hdName">طلبي</b><small class="num" id="hdId">—</small></div>
+            <button class="icon-btn sm" id="switchBtn" aria-label="تبديل الطلب"><i data-icon="swap" data-size="18"></i></button>
           </div>
 
-          <!-- 4-Step Journey Stepper -->
-          <div class="journey" id="customerJourney" style="margin-top: 10px;">
-            <div class="jstep done">
-              <div class="c"><i data-icon="check" data-size="14"></i></div>
-              <span>تم الاستلام</span>
-            </div>
-            <div class="jstep now" id="stepPicking">
-              <div class="c"><i data-icon="cart" data-size="14"></i></div>
-              <span>بالعربة الذكية</span>
-            </div>
-            <div class="jstep" id="stepReady">
-              <div class="c"><i data-icon="receipt" data-size="14"></i></div>
-              <span>جاهز للكاشير</span>
-            </div>
-            <div class="jstep" id="stepCompleted">
-              <div class="c"><i data-icon="shield" data-size="14"></i></div>
-              <span>تم الاستلام</span>
-            </div>
+          <div class="journey" id="journey">
+            <div class="jstep" data-s="new"><div class="c"><i data-icon="check" data-size="14"></i></div><span>استلام</span></div>
+            <div class="jstep" data-s="picking"><div class="c"><i data-icon="cart" data-size="14"></i></div><span>تجميع</span></div>
+            <div class="jstep" data-s="ready"><div class="c"><i data-icon="receipt" data-size="14"></i></div><span>جاهز</span></div>
+            <div class="jstep" data-s="completed"><div class="c"><i data-icon="shield" data-size="14"></i></div><span>تسليم</span></div>
           </div>
         </div>
       </header>
 
-      <!-- Main Content Stage Views -->
       <div class="container page">
-        <!-- VIEW 1: LIVE TRACKING -->
         <div class="view" data-view="track">
           <div class="stack-lg">
-            <!-- LIVE SUBSTITUTION ALERT BANNER (Flashing if picker suggested sub) -->
-            <div id="subAlertContainer"></div>
-
-            <!-- LIVE HERO PROGRESS CARD -->
-            <div id="customerHeroCardWrap"></div>
-
-            <!-- LIVE ITEMS CHECKLIST HIGHLIGHT -->
+            <div id="subAlert"></div>
+            <div id="heroWrap"></div>
             <div>
-              <div class="section-title">
-                <h2>أصناف الطلب وحالة التجميع</h2>
-                <span id="itemsDoneHeader" class="num">0 / 0 صنف</span>
-              </div>
-              <div class="list" id="customerTrackItemsList"></div>
+              <div class="section-title"><h2>أصناف طلبك</h2><span class="num" id="doneTxt">0 / 0</span></div>
+              <div class="list" id="trackList"></div>
             </div>
           </div>
         </div>
 
-        <!-- VIEW 2: ITEMS FULL MANAGEMENT -->
         <div class="view" data-view="items">
+          <div class="section-title"><h2>الفاتورة</h2><span class="badge b-gold" id="editBadge" hidden>التعديل متاح</span></div>
           <div class="stack">
-            <div class="section-title">
-              <h2>محتويات الفاتورة</h2>
-              <span id="orderEditDeadline" class="badge b-gold" hidden>متاح التعديل</span>
-            </div>
-            <div class="list" id="customerFullItemsList"></div>
-            <div class="card soft" id="orderFinancialSummary"></div>
+            <div class="list" id="fullList"></div>
+            <div class="card soft" id="sumCard"></div>
           </div>
         </div>
 
-        <!-- VIEW 3: CATALOG & SHOPPING -->
         <div class="view" data-view="shop">
           <div class="stack-lg">
-            <!-- Search Bar -->
-            <div class="searchbar">
-              <i data-icon="search" data-size="20" style="color: var(--text-3);"></i>
-              <input type="text" id="shopSearchInput" placeholder="ابحث عن أرز، زيت، حليب، خضار...">
-            </div>
-
-            <!-- Department Filter Chips -->
-            <div class="chips" id="deptFilterChips"></div>
-
-            <!-- Products Grid -->
+            <div class="searchbar"><i data-icon="search" data-size="20" class="faint"></i><input type="search" id="q" placeholder="ابحث عن صنف"></div>
+            <div class="chips" id="chips"></div>
             <div>
-              <div class="section-title">
-                <h2 id="catalogSectionTitle">الأصناف المتاحة</h2>
-                <span id="catalogCount" class="num">0 صنف</span>
-              </div>
-              <div class="pgrid" id="catalogGrid"></div>
+              <div class="section-title"><h2>الأصناف</h2><span class="num" id="catCount">0</span></div>
+              <div class="pgrid" id="grid"></div>
             </div>
           </div>
         </div>
@@ -124,464 +77,212 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      let orders = [];
-      let currentOrder = null;
-      let activeDept = 'all';
-      let searchQuery = '';
-      let cartBucket = []; // for local new cart creation if needed
-      let subTimerInterval = null;
+      let orders = [], cur = null, dept = 'all', query = '', bucket = [], subTimer = null;
+      const ORDER = ['new', 'picking', 'ready', 'completed'];
+      const $ = id => document.getElementById(id);
+      const tintOf = d => (Catalog.dept(d) || {}).tint || 'sand';
 
-      // Mount Shell Navigation Immediately
       Shell.mount({
-        role: 'customer',
-        initial: 'track',
+        role: 'customer', initial: 'track',
         tabs: [
-          { id: 'track', label: 'تتبع الطلب', icon: 'clock' },
-          { id: 'items', label: 'الأصناف', icon: 'list' },
-          { id: 'shop', label: 'تسوق وإضافة', icon: 'cart' }
+          { id: 'track', label: 'تتبع', icon: 'clock' },
+          { id: 'items', label: 'الفاتورة', icon: 'list' },
+          { id: 'shop', label: 'تسوق', icon: 'store' }
         ],
         center: { id: 'cart', label: 'السلة', icon: 'bag', act: true },
-        onAction: act => {
-          if (act === 'cart') openCartSheet();
-        }
+        onAction: act => { if (act === 'cart') openCart(); }
       });
 
-      // Background seed if empty
+      AppDB.onOrders(list => {
+        orders = list;
+        if (cur) cur = orders.find(o => o.id === cur.id) || null;
+        if (!cur) cur = orders.find(o => !['completed', 'cancelled'].includes(o.status)) || orders[orders.length - 1] || null;
+        render();
+      });
       AppDB.seedIfEmpty().catch(() => {});
 
-      // Listen to Orders
-      AppDB.onOrders(all => {
-        orders = all;
-        if (!currentOrder && orders.length) {
-          // Prefer active orders
-          currentOrder = orders.find(o => !['completed', 'cancelled'].includes(o.status)) || orders[0];
-        } else if (currentOrder) {
-          currentOrder = orders.find(o => o.id === currentOrder.id) || orders[0];
-        }
-        renderCustomerUI();
-      });
-
-      // Switch Order Sheet
-      document.getElementById('switchOrderBtn').addEventListener('click', () => {
-        Shell.openSheet({
-          title: 'اختر الطلب للمتابعة',
-          html: `
-            <div class="list">
-              ${orders.map(o => `
-                <div class="irow between" style="cursor: pointer;" onclick="selectOrder('${o.id}')">
-                  <div class="row">
-                    <span class="bin ${o.bin || 'C'}">${o.bin || '—'}</span>
-                    <div>
-                      <b>${o.customer.name} • <span class="num">${o.id}</span></b>
-                      <small class="muted" style="display: block;">إجمالي: ${Shell.money(o.total)}</small>
-                    </div>
-                  </div>
-                  <span class="badge ${o.status === 'ready' ? 'b-ok' : o.status === 'completed' ? 'b-mute' : 'b-gold'}">
-                    ${o.status === 'ready' ? 'جاهز' : o.status === 'completed' ? 'مكتمل' : 'قيد التجهيز'}
-                  </span>
-                </div>
-              `).join('')}
-            </div>`
+      $('switchBtn').onclick = () => {
+        if (!orders.length) return Shell.toast('لا توجد طلبات', { tone: 'warn' });
+        const body = Shell.openSheet({
+          title: 'طلباتي',
+          html: `<div class="list">${orders.map(o => `
+            <div class="irow tap ${cur && cur.id === o.id ? 'sel' : ''}" data-id="${o.id}">
+              <div class="grow"><div class="nm">${o.customer.name}</div><div class="sub"><span class="num">${o.id}</span><span class="dot"></span><span class="num">${Shell.money(o.total)}</span></div></div>
+              <span class="badge ${o.status === 'ready' ? 'b-ok' : o.status === 'completed' ? 'b-mute' : 'b-gold'}">${o.status === 'ready' ? 'جاهز' : o.status === 'completed' ? 'مكتمل' : 'قيد التجهيز'}</span>
+            </div>`).join('')}</div>`
         });
-        Icons.mount();
-      });
-
-      window.selectOrder = id => {
-        currentOrder = orders.find(o => o.id === id);
-        Shell.closeSheet();
-        renderCustomerUI();
+        body.querySelectorAll('[data-id]').forEach(el => el.onclick = () => { cur = orders.find(o => o.id === el.dataset.id); Shell.closeSheet(); render(); });
       };
 
-      function renderCustomerUI() {
-        if (!currentOrder) return;
-        const o = currentOrder;
-
-        // Auto expire substitutions
-        Logic.expireSubs(o);
-
-        // Header info
-        document.getElementById('customerHeaderName').textContent = `أهلاً، ${Shell.firstName(o.customer.name)}`;
-        document.getElementById('customerOrderIdTag').textContent = o.id;
-
-        // Journey Stepper state
-        const sPicking = document.getElementById('stepPicking');
-        const sReady = document.getElementById('stepReady');
-        const sCompleted = document.getElementById('stepCompleted');
-
-        sPicking.className = 'jstep';
-        sReady.className = 'jstep';
-        sCompleted.className = 'jstep';
-
-        if (o.status === 'new') {
-          sPicking.classList.add('now');
-        } else if (o.status === 'picking') {
-          sPicking.classList.add('now');
-        } else if (o.status === 'ready') {
-          sPicking.classList.add('done');
-          sReady.classList.add('now');
-        } else if (o.status === 'completed') {
-          sPicking.classList.add('done');
-          sReady.classList.add('done');
-          sCompleted.classList.add('done');
-        }
-
-        renderHeroCard(o);
-        renderSubAlert(o);
-        renderTrackChecklist(o);
-        renderFullItemsList(o);
-        renderCatalog();
+      function render() {
+        renderJourney(); renderHero(); renderSub(); renderTrack(); renderFull(); renderCatalog();
         Icons.mount();
       }
 
-      // Render Hero Card
-      function renderHeroCard(o) {
-        const wrap = document.getElementById('customerHeroCardWrap');
-        const prog = Logic.progress(o);
-        const eta = Logic.etaMin(o);
+      function renderJourney() {
+        const idx = cur ? ORDER.indexOf(cur.status) : -1;
+        document.querySelectorAll('.jstep').forEach((el, i) => {
+          el.classList.toggle('done', cur && (i < idx || cur.status === 'completed'));
+          el.classList.toggle('now', cur && i === idx && cur.status !== 'completed');
+        });
+        // "new" is shown as step 1 done, picking as current
+        if (cur && cur.status === 'new') { const s = document.querySelectorAll('.jstep'); s[0].classList.add('done'); s[0].classList.remove('now'); s[1].classList.add('now'); }
+        if (cur && cur.status === 'picking') { document.querySelectorAll('.jstep')[0].classList.add('done'); }
+        $('hdName').textContent = cur ? `أهلاً ${Shell.firstName(cur.customer.name)}` : 'مرحباً بك';
+        $('hdId').textContent = cur ? cur.id : 'KartFlow';
+      }
 
-        let stageTitle = 'جاري تجميع الأصناف من الممرات بالعربة الذكية';
-        let subText = `المُحضّر المخصص يتنقل في الممرات عبر أقصر مسار لجمع طلبك`;
-        if (o.status === 'ready') {
-          stageTitle = 'اكتمل تجهيز طلبك! جاهز عند الكاشير';
-          subText = 'يمكنك التوجه فوراً لبوابة الكاشير والتخليص السريع بدون طوابير';
-        } else if (o.status === 'completed') {
-          stageTitle = 'تم تسليم الطلب واعتماد الفاتورة بنجاح';
-          subText = 'شكراً لتسوقك معنا في هايبر الواحة';
+      function renderHero() {
+        const w = $('heroWrap');
+        if (!cur) {
+          w.innerHTML = `<div class="card"><div class="empty">${Art.cart(false, 'art')}<h3>لا يوجد طلب نشط</h3><button class="btn btn-gold" id="startBtn"><i data-icon="plus" data-size="18"></i><span>ابدأ طلباً</span></button></div></div>`;
+          $('startBtn').onclick = () => Shell.go('shop');
+          return;
         }
-
-        wrap.innerHTML = `
-          <div class="card forest" style="box-shadow: var(--shadow-2);">
-            <div class="row between" style="margin-bottom: 16px;">
-              <span class="badge b-glass">
-                <span class="live-dot" style="background: #5FD6A0"></span>
-                <span>تتبع حي لحظي</span>
-              </span>
-              <div class="row-sm">
-                <i data-icon="timer" data-size="16" style="color: var(--gold);"></i>
-                <span style="font-size: 13px;">الوقت المتوقع: <b class="num" style="color: var(--gold);">${eta} دقيقة</b></span>
-              </div>
+        Logic.expireSubs(cur);
+        const p = Logic.progress(cur), eta = Logic.etaMin(cur);
+        const st = {
+          new: ['بانتظار العربة', `خلال ${eta} د`], picking: ['جاري تجهيز طلبك', `خلال ${eta} د`],
+          ready: ['طلبك جاهز', 'توجّه للكاشير'], completed: ['تم التسليم', 'شكراً لك'], cancelled: ['تم الإلغاء', '']
+        }[cur.status] || ['', ''];
+        w.innerHTML = `
+          <div class="card forest glow">
+            <div class="row" style="gap: 16px;">
+              ${Shell.ring(p.pct, 76)}
+              <div class="grow"><h2 class="t-h2" style="margin-bottom: 4px;">${st[0]}</h2>
+                <div class="row-sm muted" style="font-size: 13.5px;"><i data-icon="timer" data-size="15"></i><span class="num">${st[1]}</span></div></div>
             </div>
-
-            <div class="row" style="gap: 20px; align-items: center; margin-bottom: 20px;">
-              ${Shell.ring(prog.pct, 80)}
-              <div class="grow" style="min-width: 0;">
-                <h3 class="t-h2" style="color: #F4F1E8; margin-bottom: 6px; font-size: 18px; line-height: 1.35;">
-                  ${stageTitle}
-                </h3>
-                <p class="muted" style="font-size: 13px; line-height: 1.5;">${subText}</p>
-              </div>
-            </div>
-
-            <div class="row between" style="padding-top: 14px; border-top: 1px solid rgba(244,241,232,.12); font-size: 13px;">
-              <div class="row-sm">
-                <i data-icon="cart" data-size="16" style="color: var(--gold);"></i>
-                <span>عربة التجميع: <b class="num">${o.cartId || 'بانتظار التخصيص'}</b></span>
-              </div>
-              <div class="row-sm">
-                <span class="muted">الإجمالي:</span>
-                <span class="num" style="font-size: 16px; font-weight: 700; color: var(--gold);">${Shell.money(o.total)}</span>
-              </div>
+            <div class="row between" style="margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(244,241,232,.12);">
+              <span class="muted" style="font-size: 13.5px;">الإجمالي</span>
+              <b class="num gold" style="font-size: 18px;">${Shell.money(cur.total)}</b>
             </div>
           </div>`;
       }
 
-      // Render Substitution Banner with 3-minute Live Countdown
-      function renderSubAlert(o) {
-        const wrap = document.getElementById('subAlertContainer');
-        const subs = Logic.pendingSubs(o);
-
-        if (!subs.length) {
-          wrap.innerHTML = '';
-          if (subTimerInterval) clearInterval(subTimerInterval);
-          return;
-        }
-
-        const s = subs[0];
-        const timeLeftMs = Math.max(0, s.expiresAt - Date.now());
-
-        wrap.innerHTML = `
-          <div class="card" style="background: linear-gradient(135deg, #FFF8E6, #FEF2D0); border: 2px solid var(--gold); box-shadow: var(--shadow-2); animation: rise .4s var(--ease) both;">
-            <div class="row between" style="margin-bottom: 10px;">
-              <div class="row-sm">
-                <span class="badge b-warn"><i data-icon="alert" data-size="14"></i><span>تنبيه بديل صنف</span></span>
-                <b style="font-size: 14px; color: #8A5E12;">صنف غير متوفر بالمخزن</b>
-              </div>
-              <div class="row-sm num" id="subCountdownText" style="font-weight: 700; color: var(--bad); font-size: 14px;">
-                ${Shell.mmss(timeLeftMs)}
-              </div>
+      function renderSub() {
+        const w = $('subAlert'); clearInterval(subTimer);
+        const s = cur && Logic.pendingSubs(cur)[0];
+        if (!s) { w.innerHTML = ''; return; }
+        w.innerHTML = `
+          <div class="card rise" style="background: linear-gradient(150deg, #FFF8E6, #FDEFC8); border: 1.5px solid var(--gold);">
+            <div class="row between" style="margin-bottom: 12px;">
+              <span class="badge b-warn"><i data-icon="alert" data-size="14"></i><span>بديل مقترح</span></span>
+              <b class="num" id="subLeft" style="color: var(--bad); font-size: 15px;">${Shell.mmss(s.expiresAt - Date.now())}</b>
             </div>
-
-            <p style="font-size: 13.5px; color: #5C4008; margin-bottom: 12px; line-height: 1.5;">
-              صنف <b>"${s.fromName}"</b> غير متاح حالياً. يقترح المُحضّر البديل التالي من نفس الممر:
-            </p>
-
-            <div class="irow between" style="background: #FFFFFF; border-radius: var(--r-md); margin-bottom: 14px; padding: 12px;">
-              <div class="row" style="gap: 12px;">
-                <div class="tile tile-sm t-${Catalog.dept(s.to.dept)?.tint || 'sand'}">${Art.dept(s.to.dept)}</div>
-                <div>
-                  <b style="font-size: 15px;">${s.to.name}</b>
-                  <div class="sub row-sm">
-                    <span class="num">${s.to.qty} ${s.to.unit}</span>
-                    <span>•</span>
-                    <span class="num">${Shell.money(s.to.price)}</span>
-                  </div>
-                </div>
-              </div>
+            <p style="font-size: 14px; color: #5C4008; margin-bottom: 12px;"><b>${s.fromName}</b> غير متوفر</p>
+            <div class="irow" style="margin-bottom: 14px;">
+              <div class="tile tile-sm t-${tintOf(s.to.dept)}">${Art.dept(s.to.dept)}</div>
+              <div class="grow"><div class="nm">${s.to.name}</div><div class="sub num">${Shell.money(s.to.price)}</div></div>
             </div>
-
-            <div class="row" style="gap: 10px;">
-              <button class="btn btn-gold grow" onclick="respondSub('${o.id}', '${s.id}', 'accepted')">
-                <i data-icon="check" data-size="18"></i>
-                <span>الموافقة على البديل</span>
-              </button>
-              <button class="btn btn-bad grow" onclick="respondSub('${o.id}', '${s.id}', 'rejected')">
-                <i data-icon="x" data-size="18"></i>
-                <span>رفض وحذف الصنف</span>
-              </button>
+            <div class="btn-row">
+              <button class="btn btn-gold" id="subYes"><i data-icon="check" data-size="18"></i><span>موافق</span></button>
+              <button class="btn btn-bad" id="subNo"><i data-icon="x" data-size="18"></i><span>رفض</span></button>
             </div>
           </div>`;
-
-        if (subTimerInterval) clearInterval(subTimerInterval);
-        subTimerInterval = setInterval(() => {
-          const rem = Math.max(0, s.expiresAt - Date.now());
-          const el = document.getElementById('subCountdownText');
-          if (el) el.textContent = Shell.mmss(rem);
-          if (rem <= 0) {
-            clearInterval(subTimerInterval);
-            Logic.expireSubs(o);
-            AppDB.update(o.id, ord => Logic.expireSubs(ord));
-          }
+        $('subYes').onclick = () => respond(s.id, 'accepted');
+        $('subNo').onclick = () => respond(s.id, 'rejected');
+        subTimer = setInterval(() => {
+          const left = s.expiresAt - Date.now(), el = $('subLeft');
+          if (el) el.textContent = Shell.mmss(left);
+          if (left <= 0) { clearInterval(subTimer); AppDB.update(cur.id, o => Logic.expireSubs(o)); }
         }, 1000);
       }
 
-      window.respondSub = async (orderId, subId, decision) => {
-        await AppDB.update(orderId, o => Logic.answerSub(o, subId, decision));
-        Shell.toast(decision === 'accepted' ? 'تم اعتماد البديل بنجاح' : 'تم استبعاد الصنف من الطلب', { tone: 'ok' });
-      };
-
-      // Render Track Checklist
-      function renderTrackChecklist(o) {
-        const list = document.getElementById('customerTrackItemsList');
-        const live = Logic.liveItems(o);
-        const done = live.filter(i => i.status === 'picked').length;
-        document.getElementById('itemsDoneHeader').textContent = `${done} / ${live.length} صنف`;
-
-        list.innerHTML = live.map(it => {
-          const isPicked = it.status === 'picked';
-          return `
-            <div class="irow ${isPicked ? 'flash' : ''}" style="transition: all .3s;">
-              <div class="tile tile-sm t-${Catalog.dept(it.dept)?.tint || 'sand'}">${Art.dept(it.dept)}</div>
-              <div class="grow" style="min-width: 0;">
-                <div class="nm" style="${isPicked ? 'text-decoration: line-through; color: var(--fg-2);' : ''}">${it.name}</div>
-                <div class="sub row-sm">
-                  <span class="num">${Shell.qtyText(it)}</span>
-                  <span>•</span>
-                  <span class="num">${Shell.money(it.price)}</span>
-                </div>
-              </div>
-              <div style="flex: none;">
-                ${isPicked ? `
-                  <span class="badge b-ok row-sm">
-                    <i data-icon="check-circle" data-size="15"></i>
-                    <span>تم التجميع</span>
-                  </span>` : `
-                  <span class="badge b-mute row-sm">
-                    <i data-icon="clock" data-size="14"></i>
-                    <span>في الانتظار</span>
-                  </span>`}
-              </div>
-            </div>`;
-        }).join('');
+      async function respond(subId, decision) {
+        Shell.haptic();
+        await AppDB.update(cur.id, o => Logic.answerSub(o, subId, decision));
+        Shell.toast(decision === 'accepted' ? 'تمت الموافقة' : 'تم الرفض', { tone: 'ok' });
       }
 
-      // Render Full Items List (Editable if editable window active)
-      function renderFullItemsList(o) {
-        const list = document.getElementById('customerFullItemsList');
-        const editable = Logic.isEditable(o);
-        const deadlineBadge = document.getElementById('orderEditDeadline');
-        deadlineBadge.hidden = !editable;
-
-        list.innerHTML = o.items.map(it => `
-          <div class="irow between">
-            <div class="row">
-              <div class="tile tile-sm t-${Catalog.dept(it.dept)?.tint || 'sand'}">${Art.dept(it.dept)}</div>
-              <div>
-                <b>${it.name}</b>
-                <div class="sub row-sm">
-                  <span class="num">${Shell.qtyText(it)}</span>
-                  <span>•</span>
-                  <span class="num">${Shell.money(it.price)}</span>
-                </div>
-              </div>
-            </div>
-            <div class="row-sm">
-              <span class="badge ${it.status === 'picked' ? 'b-ok' : it.status === 'cancelled' ? 'b-bad' : 'b-mute'}">
-                ${it.status === 'picked' ? 'تم جمعه' : it.status === 'cancelled' ? 'ملغي' : 'معلق'}
-              </span>
-              ${editable && it.status === 'pending' ? `
-                <button class="icon-btn sm ghost" onclick="removeItemFromOrder('${o.id}', '${it.id}')" title="حذف الصنف">
-                  <i data-icon="trash" data-size="16" style="color: var(--bad);"></i>
-                </button>` : ''}
-            </div>
-          </div>
-        `).join('');
-
-        document.getElementById('orderFinancialSummary').innerHTML = `
-          <div class="row between" style="margin-bottom: 8px;">
-            <span class="muted">قيمة الأصناف:</span>
-            <span class="num">${Shell.money(o.total)}</span>
-          </div>
-          <div class="row between" style="margin-bottom: 8px;">
-            <span class="muted">رسوم التجهيز السريع:</span>
-            <span class="badge b-ok">مجاناً</span>
-          </div>
-          <div class="row between" style="padding-top: 10px; border-top: 1px dashed var(--line); font-size: 16px; font-weight: 700;">
-            <span>المجموع النهائي:</span>
-            <span class="num" style="color: var(--gold-deep);">${Shell.money(o.total)}</span>
+      function renderTrack() {
+        const list = $('trackList');
+        if (!cur) { list.innerHTML = ''; $('doneTxt').textContent = '0 / 0'; return; }
+        const live = Logic.liveItems(cur), done = live.filter(i => i.status === 'picked').length;
+        $('doneTxt').textContent = `${done} / ${live.length}`;
+        const anim = Shell.first('track') ? 'rise' : '';
+        list.innerHTML = live.map((it, i) => {
+          const ok = it.status === 'picked';
+          return `<div class="irow ${anim}" style="--i:${i}">
+            <div class="tile tile-sm t-${tintOf(it.dept)}">${Art.dept(it.dept)}</div>
+            <div class="grow"><div class="nm" style="${ok ? 'opacity:.55;text-decoration:line-through;' : ''}">${it.name}</div>
+              <div class="sub"><span class="num">${Shell.qtyText(it)}</span><span class="dot"></span><span class="num">${Shell.money(it.price)}</span></div></div>
+            <span class="st ${ok ? 'ok' : it.status === 'unavailable' ? 'bad' : 'wait'}"><i data-icon="${ok ? 'check' : it.status === 'unavailable' ? 'swap' : 'clock'}" data-size="16"></i></span>
           </div>`;
+        }).join('') || `<div class="card soft center" style="padding:20px;"><span class="muted">لا توجد أصناف</span></div>`;
       }
 
-      window.removeItemFromOrder = async (orderId, itemId) => {
-        if (confirm('هل ترغب في حذف هذا الصنف من الطلب؟')) {
-          await AppDB.update(orderId, o => Logic.removeItem(o, itemId));
-          Shell.toast('تم حذف الصنف من الطلب', { tone: 'ok' });
-        }
-      };
+      function renderFull() {
+        const list = $('fullList'), sum = $('sumCard');
+        if (!cur) { list.innerHTML = `<div class="card soft center" style="padding:20px;"><span class="muted">لا توجد فاتورة</span></div>`; sum.hidden = true; return; }
+        sum.hidden = false;
+        const edit = Logic.isEditable(cur);
+        $('editBadge').hidden = !edit;
+        list.innerHTML = cur.items.map(it => `
+          <div class="irow">
+            <div class="tile tile-sm t-${tintOf(it.dept)}">${Art.dept(it.dept)}</div>
+            <div class="grow"><div class="nm">${it.name}</div><div class="sub"><span class="num">${Shell.qtyText(it)}</span><span class="dot"></span><span class="num">${Shell.money(Logic.itemTotal(it) || it.price)}</span></div></div>
+            ${edit && it.status === 'pending' ? `<button class="icon-btn sm" data-del="${it.id}" aria-label="حذف"><i data-icon="trash" data-size="16" style="color:var(--bad)"></i></button>`
+              : `<span class="st ${it.status === 'picked' ? 'ok' : it.status === 'cancelled' ? 'bad' : 'wait'}"><i data-icon="${it.status === 'picked' ? 'check' : it.status === 'cancelled' ? 'x' : 'clock'}" data-size="16"></i></span>`}
+          </div>`).join('');
+        list.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+          await AppDB.update(cur.id, o => Logic.removeItem(o, b.dataset.del));
+          Shell.toast('تم الحذف', { tone: 'ok' });
+        });
+        sum.innerHTML = `
+          <div class="row between" style="margin-bottom: 8px;"><span class="muted">الأصناف</span><span class="num">${Shell.money(cur.total)}</span></div>
+          <div class="row between" style="margin-bottom: 12px;"><span class="muted">التجهيز</span><span class="badge b-ok">مجاني</span></div>
+          <div class="row between" style="padding-top: 12px; border-top: 1px dashed var(--line); font-size: 17px; font-weight: 700;"><span>المجموع</span><span class="num">${Shell.money(cur.total)}</span></div>`;
+      }
 
-      // Catalog & Shopping
       function renderCatalog() {
-        // Render Department filter chips
-        const chips = document.getElementById('deptFilterChips');
-        chips.innerHTML = `<button class="chip ${activeDept === 'all' ? 'on' : ''}" onclick="filterDept('all')">كل الأقسام</button>` +
-          Catalog.DEPTS.map(d => `
-            <button class="chip ${activeDept === d.id ? 'on' : ''}" onclick="filterDept('${d.id}')">
-              ${d.name}
-            </button>
-          `).join('');
-
-        // Filter products
+        $('chips').innerHTML = [{ id: 'all', name: 'الكل' }].concat(Catalog.DEPTS).map(d => `<button class="chip ${dept === d.id ? 'on' : ''}" data-d="${d.id}">${d.name}</button>`).join('');
+        $('chips').querySelectorAll('[data-d]').forEach(b => b.onclick = () => { dept = b.dataset.d; renderCatalog(); Icons.mount(); });
         let prods = Catalog.products;
-        if (activeDept !== 'all') prods = prods.filter(p => p.dept === activeDept);
-        if (searchQuery) prods = prods.filter(p => p.name.includes(searchQuery));
-
-        document.getElementById('catalogCount').textContent = `${prods.length} صنف`;
-
-        const grid = document.getElementById('catalogGrid');
-        grid.innerHTML = prods.map(p => `
+        if (dept !== 'all') prods = prods.filter(p => p.dept === dept);
+        if (query) prods = prods.filter(p => p.name.includes(query));
+        $('catCount').textContent = prods.length;
+        $('grid').innerHTML = prods.length ? prods.map(p => `
           <div class="pcard">
-            <div class="tile t-${Catalog.dept(p.dept)?.tint || 'sand'}">${Art.dept(p.dept)}</div>
+            <div class="tile t-${tintOf(p.dept)}">${Art.dept(p.dept)}</div>
             <div class="pname">${p.name}</div>
-            <div class="pfoot">
-              <div class="price num">${Shell.money(p.price)}<small>/ ${p.unit}</small></div>
-              <button class="add-btn" onclick="addToOrder('${p.id}')" title="إضافة للطلب">
-                <i data-icon="plus" data-size="18"></i>
-              </button>
-            </div>
-          </div>
-        `).join('');
+            <div class="pfoot"><span class="price num">${Shell.money(p.price)}</span><button class="add-btn" data-add="${p.id}" aria-label="إضافة"><i data-icon="plus" data-size="18"></i></button></div>
+          </div>`).join('') : `<div class="card soft center" style="grid-column:1/-1;padding:20px;"><span class="muted">لا نتائج</span></div>`;
+        $('grid').querySelectorAll('[data-add]').forEach(b => b.onclick = () => add(b.dataset.add));
+      }
+      $('q').addEventListener('input', e => { query = e.target.value.trim(); renderCatalog(); Icons.mount(); });
+
+      async function add(pid) {
+        const p = Catalog.byId(pid); if (!p) return;
+        Shell.haptic();
+        if (cur && Logic.isEditable(cur)) {
+          await AppDB.update(cur.id, o => Logic.addLines(o, [{ pid, qty: 1 }]));
+          Shell.toast('أُضيف إلى طلبك', { tone: 'ok' });
+        } else {
+          const ex = bucket.find(x => x.pid === pid);
+          if (ex) ex.qty++; else bucket.push({ pid, qty: 1 });
+          Shell.badge('cart', bucket.reduce((s, x) => s + x.qty, 0));
+          Shell.toast('أُضيف إلى السلة', { tone: 'ok' });
+        }
       }
 
-      window.filterDept = deptId => {
-        activeDept = deptId;
-        renderCatalog();
-        Icons.mount();
-      };
-
-      document.getElementById('shopSearchInput').addEventListener('input', e => {
-        searchQuery = e.target.value.trim();
-        renderCatalog();
-        Icons.mount();
-      });
-
-      window.addToOrder = async productId => {
-        const prod = Catalog.byId(productId);
-        if (!prod) return;
-
-        if (currentOrder && Logic.isEditable(currentOrder)) {
-          // Add directly to active order!
-          await AppDB.update(currentOrder.id, o => Logic.addLines(o, [{ pid: prod.id, qty: 1 }]));
-          Shell.toast(`تمت إضافة "${prod.name}" لطلبك النشط (${currentOrder.id})`, { tone: 'ok' });
-        } else {
-          // Add to local cart bucket
-          const ex = cartBucket.find(x => x.pid === prod.id);
-          if (ex) ex.qty++; else cartBucket.push({ pid: prod.id, qty: 1 });
-          Shell.badge('cart', cartBucket.reduce((s, x) => s + x.qty, 0));
-          Shell.toast(`تمت إضافة "${prod.name}" للسلة`, { tone: 'ok' });
+      function openCart() {
+        if (!bucket.length) {
+          return Shell.openSheet({ title: 'السلة', html: `<div class="empty">${Art.cart(false, 'art')}<h3>السلة فارغة</h3><button class="btn btn-gold" data-close><span>تصفّح الأصناف</span></button></div>` });
         }
-      };
-
-      // Cart Bottom Sheet
-      function openCartSheet() {
-        if (currentOrder && Logic.isEditable(currentOrder)) {
-          Shell.openSheet({
-            title: `سلة الطلب النشط (${currentOrder.id})`,
-            html: `
-              <div class="stack">
-                <div class="badge b-ok" style="margin-bottom: 6px;">يمكنك إضافة أصناف إضافية وسيتم توجيهها لمسار المُحضّر مباشرة</div>
-                <div class="list">
-                  ${currentOrder.items.map(it => `
-                    <div class="row between" style="padding: 10px 0; border-bottom: 1px dashed var(--line);">
-                      <b>${it.name}</b>
-                      <span class="num">${it.qty} ${it.unit} • ${Shell.money(it.price)}</span>
-                    </div>
-                  `).join('')}
-                </div>
-                <div class="row between" style="margin-top: 14px; font-size: 16px; font-weight: 700;">
-                  <span>الإجمالي:</span>
-                  <span class="num" style="color: var(--gold-deep);">${Shell.money(currentOrder.total)}</span>
-                </div>
-              </div>`
-          });
-          return;
-        }
-
-        // Bucket for new order creation
-        if (!cartBucket.length) {
-          Shell.openSheet({
-            title: 'سلة التسوق فارغة',
-            html: `<div class="empty">${Art.cart(false, 'art')}<h3>السلة فارغة حالياً</h3><p>تصفح كتالوج المتجر واضغط على زر (+) لإضافة الأصناف.</p></div>`
-          });
-          return;
-        }
-
-        const lines = cartBucket.map(b => ({ prod: Catalog.byId(b.pid), qty: b.qty }));
-        const total = lines.reduce((s, l) => s + l.prod.price * l.qty, 0);
-
+        const lines = bucket.map(b => ({ p: Catalog.byId(b.pid), q: b.qty }));
+        const total = lines.reduce((s, l) => s + l.p.price * l.q, 0);
         Shell.openSheet({
-          title: 'إنشاء طلب جديد',
-          html: `
-            <div class="stack">
-              <div class="list">
-                ${lines.map(l => `
-                  <div class="row between" style="padding: 8px 0; border-bottom: 1px dashed var(--line);">
-                    <div><b>${l.prod.name}</b><small class="muted" style="display:block;">${Shell.money(l.prod.price)} / ${l.prod.unit}</small></div>
-                    <span class="num">الكمية: <b>${l.qty}</b></span>
-                  </div>
-                `).join('')}
-              </div>
-              <div class="row between" style="margin-top: 14px; font-size: 17px; font-weight: 700;">
-                <span>إجمالي الطلب:</span>
-                <span class="num" style="color: var(--gold-deep);">${Shell.money(total)}</span>
-              </div>
-              <button class="btn btn-gold block lg" id="confirmNewOrderBtn" style="margin-top: 14px;">
-                <i data-icon="check" data-size="20"></i>
-                <span>تأكيد وإرسال الطلب لعربة التجهيز</span>
-              </button>
-            </div>`,
-          onMount: body => {
-            body.querySelector('#confirmNewOrderBtn').addEventListener('click', async () => {
-              const newOrder = Logic.makeOrder({
-                name: 'عميل جديد',
-                lines: cartBucket
-              });
-              await AppDB.put(newOrder);
-              cartBucket = [];
-              Shell.badge('cart', 0);
-              currentOrder = newOrder;
-              Shell.closeSheet();
-              Shell.go('track');
-              Shell.toast('تم إرسال طلبك الجديد بنجاح!', { tone: 'ok' });
-            });
+          title: 'سلتي',
+          html: `<div class="stack">
+            <div class="list">${lines.map(l => `<div class="irow"><div class="tile tile-sm t-${tintOf(l.p.dept)}">${Art.dept(l.p.dept)}</div><div class="grow"><div class="nm">${l.p.name}</div><div class="sub num">${Shell.money(l.p.price)}</div></div><b class="num none">× ${l.q}</b></div>`).join('')}</div>
+            <div class="row between" style="font-size: 17px; font-weight: 700; padding-top: 6px;"><span>المجموع</span><span class="num">${Shell.money(total)}</span></div>
+            <button class="btn btn-gold shine block lg" id="sendOrder"><i data-icon="check" data-size="20"></i><span>إرسال الطلب</span></button></div>`,
+          onMount: body => body.querySelector('#sendOrder').onclick = async () => {
+            const o = Logic.makeOrder({ name: 'عميل جديد', lines: bucket });
+            await AppDB.put(o);
+            bucket = []; Shell.badge('cart', 0); cur = o;
+            Shell.closeSheet(); Shell.go('track'); render();
+            Shell.toast('وصل طلبك', { tone: 'ok' });
           }
         });
         Icons.mount();

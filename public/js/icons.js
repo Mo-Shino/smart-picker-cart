@@ -15,6 +15,7 @@
     minus: '<path d="M5 12h14"/>',
     'arrow-right': '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
     'arrow-left': '<path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>',
+    'chevron-right': '<path d="m9 18 6-6-6-6"/>',
     'chevron-left': '<path d="m15 18-6-6 6-6"/>',
     'chevron-down': '<path d="m6 9 6 6 6-6"/>',
     clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',

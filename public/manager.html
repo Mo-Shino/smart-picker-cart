@@ -2,15 +2,16 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>لوحة عمليات المتجر | KartFlow Operations</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>لوحة المتجر | KartFlow</title>
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#0A1D1B">
+  <meta name="theme-color" content="#1E4A44">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="/css/style.css">
-
-  <!-- Firebase Cloud SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="/config.js"></script>
@@ -23,80 +24,49 @@
 <body>
   <div class="app" id="app">
     <main class="stage">
-      <!-- Top Band Header -->
       <header class="band">
         <div class="container band-in">
           <div class="topbar">
-            <div class="brand-lockup">
-              <a href="/" class="icon-btn sm" aria-label="الرئيسية"><i data-icon="chevron-right" data-size="18"></i></a>
-              <div>
-                <b>لوحة عمليات المتجر (Operations)</b>
-                <small>مراقبة حية للعربات والأرفف ومعدل التدفق</small>
-              </div>
-            </div>
-            <div class="row-sm">
-              <span class="badge b-glass"><i data-icon="store" data-size="14"></i><span>فرع المعادي</span></span>
-              <span class="badge b-live"><span class="live-dot"></span><span>مباشر</span></span>
-            </div>
+            <a href="/" class="icon-btn sm" aria-label="الرئيسية"><i data-icon="chevron-right" data-size="20"></i></a>
+            <div class="ttl"><b>لوحة المتجر</b><small>فرع المعادي</small></div>
+            <span class="badge b-live"><span class="live-dot"></span><span>مباشر</span></span>
           </div>
 
-          <!-- Executive KPI Grid -->
-          <div class="kpis">
+          <div class="kpis sx">
             <div class="kpi t-sand">
-              <div class="row between"><span class="l">عربات نشطة</span><div class="ico"><i data-icon="cart" data-size="16"></i></div></div>
-              <div class="v num" id="kpiActiveCarts">02</div>
+              <div class="row between"><span class="l ell">عربات نشطة</span><div class="ico"><i data-icon="cart" data-size="16"></i></div></div>
+              <div class="v num" id="kpiCarts">01</div>
             </div>
             <div class="kpi t-mint">
-              <div class="row between"><span class="l">متوسط التجهيز</span><div class="ico"><i data-icon="timer" data-size="16"></i></div></div>
+              <div class="row between"><span class="l ell">متوسط التجهيز</span><div class="ico"><i data-icon="timer" data-size="16"></i></div></div>
               <div class="v num">4.2m</div>
             </div>
             <div class="kpi t-sky">
-              <div class="row between"><span class="l">دقة التجميع</span><div class="ico"><i data-icon="shield" data-size="16"></i></div></div>
+              <div class="row between"><span class="l ell">دقة التجميع</span><div class="ico"><i data-icon="shield" data-size="16"></i></div></div>
               <div class="v num">99.8%</div>
             </div>
             <div class="kpi t-peach">
-              <div class="row between"><span class="l">إجمالي المبيعات</span><div class="ico"><i data-icon="receipt" data-size="16"></i></div></div>
-              <div class="v num" id="kpiTotalRevenue" style="font-size: 22px;">0 ج.م</div>
+              <div class="row between"><span class="l ell">المبيعات</span><div class="ico"><i data-icon="receipt" data-size="16"></i></div></div>
+              <div class="v num" id="kpiSales">0</div>
             </div>
           </div>
         </div>
       </header>
 
-      <!-- Main Content Stage Views -->
       <div class="container page">
-        <!-- VIEW 1: OVERVIEW & ACTIVE ORDERS -->
         <div class="view" data-view="overview">
-          <div class="stack-lg">
-            <div class="section-title">
-              <h2>الطلبات قيد التجهيز والتسليم</h2>
-              <span id="overviewOrdersCount" class="num">0 طلبات</span>
-            </div>
-            <div class="stack" id="overviewOrdersList"></div>
-          </div>
+          <div class="section-title"><h2>الطلبات</h2><span class="num" id="ordersCount">0</span></div>
+          <div class="stack" id="ordersList"></div>
         </div>
 
-        <!-- VIEW 2: LIVE AUDIT EVENT STREAM -->
         <div class="view" data-view="live">
-          <div class="stack">
-            <div class="section-title">
-              <h2>التغذية اللحظية لحركات المتجر (Live Event Stream)</h2>
-              <span class="badge b-live"><span class="live-dot"></span><span>تدفق حي</span></span>
-            </div>
-            <div class="card" style="padding: 24px;">
-              <ul class="feed" id="liveActivityFeed"></ul>
-            </div>
-          </div>
+          <div class="section-title"><h2>حركة المتجر</h2><span class="badge b-live"><span class="live-dot"></span><span>حي</span></span></div>
+          <div class="card"><ul class="feed" id="feedList"></ul></div>
         </div>
 
-        <!-- VIEW 3: CATALOG & AISLE MAPPING -->
         <div class="view" data-view="catalog">
-          <div class="stack-lg">
-            <div class="section-title">
-              <h2>توزيع ممرات السوبر ماركت (Store Aisles A1-D2)</h2>
-              <span class="num">8 أقسام مجهزة</span>
-            </div>
-            <div class="list" id="aislesMapList"></div>
-          </div>
+          <div class="section-title"><h2>الممرات</h2><span class="num">A1 – D2</span></div>
+          <div class="list" id="aislesList"></div>
         </div>
       </div>
     </main>
@@ -105,132 +75,119 @@
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       let orders = [];
+      const $ = id => document.getElementById(id);
 
       Shell.mount({
-        role: 'manager',
-        initial: 'overview',
+        role: 'manager', initial: 'overview',
         tabs: [
-          { id: 'overview', label: 'العمليات والطلبات', icon: 'layout' },
-          { id: 'live', label: 'التغذية الحية', icon: 'activity' },
-          { id: 'catalog', label: 'ممرات المتجر', icon: 'store' }
+          { id: 'overview', label: 'الطلبات', icon: 'layout' },
+          { id: 'live', label: 'الحركة', icon: 'activity' },
+          { id: 'catalog', label: 'الممرات', icon: 'store' }
         ],
-        center: { id: 'reset', label: 'إعادة تهيئة', icon: 'refresh', act: true },
-        onAction: act => {
-          if (act === 'reset') {
-            if (confirm('هل ترغب في إعادة تهيئة الطلبات التجريبية الافتراضية للمتجر؟')) {
-              AppDB.reset().then(() => Shell.toast('تمت إعادة ضبط البيانات التجريبية', { tone: 'ok' }));
-            }
-          }
-        }
+        center: { id: 'reset', label: 'تهيئة', icon: 'refresh', act: true },
+        onAction: act => { if (act === 'reset') openResetSheet(); }
       });
 
+      AppDB.onOrders(list => { orders = list; sync(); });
       AppDB.seedIfEmpty().catch(() => {});
 
-      AppDB.onOrders(all => {
-        orders = all;
-        syncManagerUI();
-      });
+      function sync() {
+        const carts = new Set(orders.filter(o => o.cartId && !['completed', 'cancelled'].includes(o.status)).map(o => o.cartId)).size;
+        const sales = orders.reduce((s, o) => s + (o.status !== 'cancelled' ? o.total : 0), 0);
 
-      function syncManagerUI() {
-        // KPI calculations
-        const activeCarts = new Set(orders.filter(o => o.cartId && !['completed', 'cancelled'].includes(o.status)).map(o => o.cartId)).size;
-        const totalSales = orders.reduce((s, o) => s + (o.status !== 'cancelled' ? o.total : 0), 0);
+        $('kpiCarts').textContent = String(Math.max(1, carts)).padStart(2, '0');
+        $('kpiSales').innerHTML = Shell.money(sales);
+        $('ordersCount').textContent = orders.length;
 
-        document.getElementById('kpiActiveCarts').textContent = String(Math.max(1, activeCarts)).padStart(2, '0');
-        document.getElementById('kpiTotalRevenue').innerHTML = Shell.money(totalSales);
-        document.getElementById('overviewOrdersCount').textContent = `${orders.length} طلبات`;
-
-        renderOrdersTable();
-        renderLiveFeed();
-        renderAislesMap();
+        renderOrders();
+        renderFeed();
+        renderAisles();
         Icons.mount();
       }
 
-      function renderOrdersTable() {
-        const wrap = document.getElementById('overviewOrdersList');
+      function renderOrders() {
+        const el = $('ordersList');
         if (!orders.length) {
-          wrap.innerHTML = `<div class="card soft center" style="padding: 24px;"><p class="muted">لا توجد طلبات مسجلة.</p></div>`;
+          el.innerHTML = `<div class="card soft center" style="padding:20px;"><span class="muted">لا توجد طلبات</span></div>`;
           return;
         }
-
-        wrap.innerHTML = orders.map(o => {
-          const prog = Logic.progress(o);
+        const anim = Shell.first('mgr-orders') ? 'rise' : '';
+        el.innerHTML = orders.map((o, i) => {
+          const p = Logic.progress(o);
+          const st = o.status === 'completed' ? ['مكتمل', 'b-ok'] : o.status === 'ready' ? ['جاهز', 'b-forest'] : ['جاري', 'b-gold'];
           return `
-            <div class="card">
-              <div class="row between" style="margin-bottom: 12px;">
-                <div class="row">
-                  <span class="bin lg ${o.bin || 'A'}">${o.bin || '—'}</span>
-                  <div>
-                    <b>${o.customer.name}</b>
-                    <small class="muted row-sm" style="display: flex;">
-                      <span class="num">${o.id}</span>
-                      <span>•</span>
-                      <span>عربة ${o.cartId || 'غير مخصص'}</span>
-                    </small>
-                  </div>
+            <div class="card ${anim}" style="--i:${i}">
+              <div class="row" style="margin-bottom: 12px;">
+                <span class="bin lg ${o.bin || 'A'}">${o.bin || 'A'}</span>
+                <div class="grow">
+                  <b class="ell" style="display:block;">${o.customer.name}</b>
+                  <small class="muted num">${o.id}</small>
                 </div>
-                <div style="text-align: end;">
-                  <span class="num" style="font-weight: 700; font-size: 16px;">${Shell.money(o.total)}</span>
-                  <span class="badge ${o.status === 'completed' ? 'b-ok' : o.status === 'ready' ? 'b-forest' : 'b-gold'}" style="display: block; margin-top: 4px;">
-                    ${o.status === 'completed' ? 'تم التسليم' : o.status === 'ready' ? 'جاهز للتسليم' : 'قيد التجميع'}
-                  </span>
+                <div class="none" style="text-align:end;">
+                  <b class="num" style="display:block;">${Shell.money(o.total)}</b>
+                  <span class="badge ${st[1]}" style="margin-top:4px;">${st[0]}</span>
                 </div>
               </div>
-
-              <div class="row between" style="font-size: 13px; margin-bottom: 6px;">
-                <span class="muted">نسبة الإنجاز:</span>
-                <span class="num" style="font-weight: 700;">${prog.done} من ${prog.total} صنف (${prog.pct}%)</span>
+              <div class="row between" style="font-size:12.5px;margin-bottom:6px;">
+                <span class="muted num">${p.done} / ${p.total}</span>
+                <b class="num">${p.pct}%</b>
               </div>
-              <div class="bar"><i style="--p: ${prog.pct};"></i></div>
+              <div class="bar"><i style="--p:${p.pct}"></i></div>
             </div>`;
         }).join('');
       }
 
-      function renderLiveFeed() {
-        const feed = document.getElementById('liveActivityFeed');
+      function renderFeed() {
+        const el = $('feedList');
         const events = [];
-        orders.forEach(o => {
-          (o.log || []).forEach(l => events.push({ ...l, orderId: o.id, customer: o.customer.name }));
-        });
+        orders.forEach(o => (o.log || []).forEach(l => events.push({ ...l, id: o.id, name: Shell.firstName(o.customer.name) })));
         events.sort((a, b) => b.t - a.t);
-
         if (!events.length) {
-          feed.innerHTML = `<li><div class="d"></div><div>لا توجد حركات مسجلة بعد.</div></li>`;
+          el.innerHTML = `<li><div class="d"></div><div class="muted">لا توجد حركات بعد</div></li>`;
           return;
         }
-
-        feed.innerHTML = events.slice(0, 25).map(e => `
+        el.innerHTML = events.slice(0, 20).map(e => `
           <li>
             <div class="d"></div>
-            <div>
-              <span style="font-weight: 600;">${e.x}</span>
-              <span class="muted"> — ${e.customer} (<b class="num">${e.orderId}</b>)</span>
-              <time class="num">${Shell.ago(e.t)} • ${Shell.clock(e.t)}</time>
+            <div class="grow">
+              <div class="ell"><b>${e.x}</b> <span class="muted">· ${e.name}</span></div>
+              <time class="num">${Shell.ago(e.t)} · ${e.id}</time>
             </div>
-          </li>
-        `).join('');
+          </li>`).join('');
       }
 
-      function renderAislesMap() {
-        const wrap = document.getElementById('aislesMapList');
-        wrap.innerHTML = Catalog.DEPTS.map(d => {
-          const prods = Catalog.products.filter(p => p.dept === d.id);
+      function renderAisles() {
+        const anim = Shell.first('mgr-aisles') ? 'rise' : '';
+        $('aislesList').innerHTML = Catalog.DEPTS.map((d, i) => {
+          const count = Catalog.products.filter(p => p.dept === d.id).length;
           return `
-            <div class="card" style="display: flex; align-items: center; justify-content: space-between;">
-              <div class="row">
-                <div class="tile tile-md t-${d.tint || 'sand'}">${Art.dept(d.id)}</div>
-                <div>
-                  <b>${d.name}</b>
-                  <small class="muted row-sm" style="display: flex; margin-top: 2px;">
-                    <span class="num">ممر ${d.aisle}</span>
-                    <span>•</span>
-                    <span class="num">${prods.length} أصناف مسجلة</span>
-                  </small>
-                </div>
+            <div class="irow ${anim}" style="--i:${i}">
+              <div class="tile tile-sm t-${d.tint || 'sand'}">${Art.dept(d.id)}</div>
+              <div class="grow">
+                <div class="nm">${d.name}</div>
+                <div class="sub"><span class="num">ممر ${d.aisle}</span><span class="dot"></span><span class="num">${count} صنف</span></div>
               </div>
-              <span class="badge b-mute num">تسلسل المسار #${d.order}</span>
+              <span class="badge b-mute num">#${d.order}</span>
             </div>`;
         }).join('');
+      }
+
+      function openResetSheet() {
+        Shell.openSheet({
+          title: 'إعادة ضبط البيانات؟',
+          html: `<div class="stack">
+            <p class="muted">سيتم استعادة الطلبات التجريبية الافتراضية.</p>
+            <div class="btn-row">
+              <button class="btn btn-soft" data-close>إلغاء</button>
+              <button class="btn btn-gold" id="confirmReset">تأكيد</button>
+            </div>
+          </div>`,
+          onMount: body => body.querySelector('#confirmReset').onclick = async () => {
+            await AppDB.reset();
+            Shell.closeSheet();
+            Shell.toast('تمت إعادة الضبط', { tone: 'ok' });
+          }
+        });
       }
     });
   </script>

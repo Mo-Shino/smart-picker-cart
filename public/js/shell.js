@@ -53,6 +53,10 @@
     });
     const start = location.hash.slice(1);
     go(views[start] ? start : c.initial, true);
+    window.addEventListener('hashchange', () => {
+      const h = location.hash.slice(1);
+      if (views[h]) go(h, true);
+    });
   }
 
   function go(id, silent) {
@@ -139,5 +143,10 @@
 
   if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
 
-  window.Shell = { mount, go, badge, openSheet, closeSheet, sheetBody, toast, burst, countUp, ring, tile, $, $$, esc, money, mmss, firstName, ago, clock, qtyText, APPS };
+  // true only the first time a key is asked for — lets lists animate in once, not on every live update
+  const seen = new Set();
+  const first = key => { if (seen.has(key)) return false; seen.add(key); return true; };
+  const haptic = (ms = 12) => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
+
+  window.Shell = { first, haptic, mount, go, badge, openSheet, closeSheet, sheetBody, toast, burst, countUp, ring, tile, $, $$, esc, money, mmss, firstName, ago, clock, qtyText, APPS };
 })();
